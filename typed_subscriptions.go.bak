@@ -10,7 +10,7 @@ type RealtimeTypedSubscriptionHandler struct {
 	client Client
 }
 
-// NewRealtimeTypedSubscriptionHandler creates a new typed subscription handler for real-time data
+// NewRealtimeTypedSubscriptionHandler creates a new typed subscription handler
 func NewRealtimeTypedSubscriptionHandler(client Client) *RealtimeTypedSubscriptionHandler {
 	return &RealtimeTypedSubscriptionHandler{
 		client: client,
@@ -23,18 +23,17 @@ func NewRealtimeTypedSubscriptionHandler(client Client) *RealtimeTypedSubscripti
 type ActivityTradesCallback func(trade Trade) error
 
 // SubscribeToActivityTrades subscribes to activity trades with a typed callback
-// filter: Optional ActivityFilter to filter by market or asset ID
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityTrades(callback ActivityTradesCallback, filter *ActivityFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityTrades(callback ActivityTradesCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicActivity,
 			Type:    MessageTypeTrades,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
@@ -43,18 +42,17 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityTrades(callback Ac
 type ActivityOrdersMatchedCallback func(trade Trade) error
 
 // SubscribeToActivityOrdersMatched subscribes to activity orders matched with a typed callback
-// filter: Optional ActivityFilter to filter by market or asset ID
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityOrdersMatched(callback ActivityOrdersMatchedCallback, filter *ActivityFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityOrdersMatched(callback ActivityOrdersMatchedCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicActivity,
 			Type:    MessageTypeOrdersMatched,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
@@ -65,18 +63,17 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityOrdersMatched(call
 type CommentCreatedCallback func(comment Comment) error
 
 // SubscribeToCommentCreated subscribes to comment created events with a typed callback
-// filter: Optional CommentFilter to filter by event ID or series ID
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentCreated(callback CommentCreatedCallback, filter *CommentFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentCreated(callback CommentCreatedCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicComments,
 			Type:    MessageTypeCommentCreated,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
@@ -85,18 +82,17 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentCreated(callback Co
 type CommentRemovedCallback func(comment Comment) error
 
 // SubscribeToCommentRemoved subscribes to comment removed events with a typed callback
-// filter: Optional CommentFilter to filter by event ID or series ID
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentRemoved(callback CommentRemovedCallback, filter *CommentFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentRemoved(callback CommentRemovedCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicComments,
 			Type:    MessageTypeCommentRemoved,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
@@ -105,18 +101,17 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentRemoved(callback Co
 type ReactionCreatedCallback func(reaction Reaction) error
 
 // SubscribeToReactionCreated subscribes to reaction created events with a typed callback
-// filter: Optional CommentFilter to filter by event ID or series ID
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionCreated(callback ReactionCreatedCallback, filter *CommentFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionCreated(callback ReactionCreatedCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicComments,
 			Type:    MessageTypeReactionCreated,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
@@ -125,18 +120,17 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionCreated(callback R
 type ReactionRemovedCallback func(reaction Reaction) error
 
 // SubscribeToReactionRemoved subscribes to reaction removed events with a typed callback
-// filter: Optional CommentFilter to filter by event ID or series ID
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionRemoved(callback ReactionRemovedCallback, filter *CommentFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionRemoved(callback ReactionRemovedCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicComments,
 			Type:    MessageTypeReactionRemoved,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
@@ -235,35 +229,35 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteExpired(callback R
 type CryptoPriceCallback func(price CryptoPrice) error
 
 // SubscribeToCryptoPrices subscribes to crypto price updates
-// filter: CryptoPriceFilter with symbol (e.g., "btcusdt")
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPrices(callback CryptoPriceCallback, filter *CryptoPriceFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+// filters example: `{"symbol":"BTCUSDT"}`
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPrices(callback CryptoPriceCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicCryptoPrices,
 			Type:    MessageTypeUpdate,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
 
 // SubscribeToCryptoPricesChainlink subscribes to crypto price updates from Chainlink
-// filter: CryptoPriceFilter with symbol (e.g., "btcusdt")
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPricesChainlink(callback CryptoPriceCallback, filter *CryptoPriceFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+// filters example: `{"symbol":"BTCUSDT"}`
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPricesChainlink(callback CryptoPriceCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicCryptoPricesChainlink,
 			Type:    MessageTypeUpdate,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
@@ -274,18 +268,18 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPricesChainlink(call
 type EquityPriceCallback func(price EquityPrice) error
 
 // SubscribeToEquityPrices subscribes to equity price updates
-// filter: EquityPriceFilter with symbol (e.g., "AAPL")
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToEquityPrices(callback EquityPriceCallback, filter *EquityPriceFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+// filters example: `{"symbol":"AAPL"}`
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToEquityPrices(callback EquityPriceCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicEquityPrices,
 			Type:    MessageTypeUpdate,
-			Filters: filterStr,
+			Filters: filter,
 		},
 	})
 }
@@ -337,17 +331,17 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserAll(auth ClobAuth)
 type PriceChangesCallback func(changes PriceChanges) error
 
 // SubscribeToCLOBMarketPriceChanges subscribes to CLOB market price changes
-// filter: CLOBMarketFilter with token IDs
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketPriceChanges(filter *CLOBMarketFilter, callback PriceChangesCallback) error {
-	if filter == nil || len(filter.TokenIDs) == 0 {
-		return fmt.Errorf("filter with token IDs is required for price_change subscription")
+// filters are mandatory and should contain token IDs, example: `["100","200"]`
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketPriceChanges(filters string, callback PriceChangesCallback) error {
+	if filters == "" {
+		return fmt.Errorf("filters are mandatory for price_change subscription")
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicClobMarket,
 			Type:    MessageTypePriceChange,
-			Filters: filter.ToJSON(),
+			Filters: filters,
 		},
 	})
 }
@@ -356,36 +350,38 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketPriceChanges(fil
 type AggOrderbookCallback func(orderbook AggOrderbook) error
 
 // SubscribeToCLOBMarketAggOrderbook subscribes to CLOB market aggregated orderbook
-// filter: CLOBMarketFilter with token IDs
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketAggOrderbook(filter *CLOBMarketFilter, callback AggOrderbookCallback) error {
-	if filter == nil || len(filter.TokenIDs) == 0 {
-		return fmt.Errorf("filter with token IDs is required for agg_orderbook subscription")
+// filters example: `["100","200"]` (token IDs)
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketAggOrderbook(callback AggOrderbookCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicClobMarket,
 			Type:    MessageTypeAggOrderbook,
-			Filters: filter.ToJSON(),
+			Filters: filter,
 		},
 	})
 }
 
 // LastTradePriceCallback is the callback function for last trade price messages
-type LastTradePriceCallback func(price LastTradePrice) error
+type LastTradePriceCallback func(lastPrice LastTradePrice) error
 
 // SubscribeToCLOBMarketLastTradePrice subscribes to CLOB market last trade price
-// filter: CLOBMarketFilter with token IDs
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketLastTradePrice(filter *CLOBMarketFilter, callback LastTradePriceCallback) error {
-	if filter == nil || len(filter.TokenIDs) == 0 {
-		return fmt.Errorf("filter with token IDs is required for last_trade_price subscription")
+// filters example: `["100","200"]` (token IDs)
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketLastTradePrice(callback LastTradePriceCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicClobMarket,
 			Type:    MessageTypeLastTradePrice,
-			Filters: filter.ToJSON(),
+			Filters: filter,
 		},
 	})
 }
@@ -394,17 +390,18 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketLastTradePrice(f
 type TickSizeChangeCallback func(change TickSizeChange) error
 
 // SubscribeToCLOBMarketTickSizeChange subscribes to CLOB market tick size changes
-// filter: CLOBMarketFilter with token IDs
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketTickSizeChange(filter *CLOBMarketFilter, callback TickSizeChangeCallback) error {
-	if filter == nil || len(filter.TokenIDs) == 0 {
-		return fmt.Errorf("filter with token IDs is required for tick_size_change subscription")
+// filters example: `["100","200"]` (token IDs)
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketTickSizeChange(callback TickSizeChangeCallback, filters ...string) error {
+	filter := ""
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicClobMarket,
 			Type:    MessageTypeTickSizeChange,
-			Filters: filter.ToJSON(),
+			Filters: filter,
 		},
 	})
 }
@@ -431,6 +428,7 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketResolved(callbac
 		},
 	})
 }
+
 // RealtimeMessageRouter routes incoming messages to registered typed callbacks
 type RealtimeMessageRouter struct {
 	// Activity handlers

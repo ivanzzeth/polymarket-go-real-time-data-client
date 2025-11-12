@@ -60,8 +60,7 @@ func main() {
 	// Subscribe to crypto prices
 	cryptoSymbols := []string{"BTCUSDT", "ETHUSDT", "SOLUSDT"}
 	for _, symbol := range cryptoSymbols {
-		filter := `{"symbol":"` + symbol + `"}`
-		if err := typedSub.SubscribeToCryptoPrices(nil, filter); err != nil {
+		if err := typedSub.SubscribeToCryptoPrices(nil, polymarketdataclient.NewCryptoPriceFilter(symbol)); err != nil {
 			log.Printf("Failed to subscribe to %s: %v", symbol, err)
 		} else {
 			log.Printf("✓ Subscribed to %s", symbol)
@@ -71,8 +70,7 @@ func main() {
 	// Subscribe to equity prices
 	equitySymbols := []string{"AAPL", "TSLA", "NVDA", "MSFT"}
 	for _, symbol := range equitySymbols {
-		filter := `{"symbol":"` + symbol + `"}`
-		if err := typedSub.SubscribeToEquityPrices(nil, filter); err != nil {
+		if err := typedSub.SubscribeToEquityPrices(nil, polymarketdataclient.NewEquityPriceFilter(symbol)); err != nil {
 			log.Printf("Failed to subscribe to %s: %v", symbol, err)
 		} else {
 			log.Printf("✓ Subscribed to %s", symbol)

@@ -119,30 +119,30 @@ func main() {
 
 	// Example 1: Subscribe to activity trades for a specific market
 	// Filter by event_slug or market_slug
-	if err := typedSub.SubscribeToActivityTrades(nil, `{"event_slug":"presidential-election-winner-2024"}`); err != nil {
+	if err := typedSub.SubscribeToActivityTrades(nil, nil); err != nil {
 		log.Printf("Failed to subscribe to activity trades: %v", err)
 	}
 
 	// Example 2: Subscribe to activity orders matched
-	if err := typedSub.SubscribeToActivityOrdersMatched(nil); err != nil {
+	if err := typedSub.SubscribeToActivityOrdersMatched(nil, nil); err != nil {
 		log.Printf("Failed to subscribe to orders matched: %v", err)
 	}
 
 	// Example 3: Subscribe to comments for a specific event
 	// Filter by parentEntityID and parentEntityType
-	if err := typedSub.SubscribeToCommentCreated(nil, `{"parentEntityID":100,"parentEntityType":"Event"}`); err != nil {
+	if err := typedSub.SubscribeToCommentCreated(nil, polymarketrealtime.NewCommentFilter().WithEventID(100)); err != nil {
 		log.Printf("Failed to subscribe to comments: %v", err)
 	}
 
 	// Example 4: Subscribe to crypto prices
 	// Subscribe to Bitcoin price updates
-	if err := typedSub.SubscribeToCryptoPrices(nil, `{"symbol":"BTCUSDT"}`); err != nil {
+	if err := typedSub.SubscribeToCryptoPrices(nil, polymarketrealtime.NewCryptoPriceFilter("btcusdt")); err != nil {
 		log.Printf("Failed to subscribe to crypto prices: %v", err)
 	}
 
 	// Example 5: Subscribe to equity prices
 	// Subscribe to Apple stock price updates
-	if err := typedSub.SubscribeToEquityPrices(nil, `{"symbol":"AAPL"}`); err != nil {
+	if err := typedSub.SubscribeToEquityPrices(nil, polymarketrealtime.NewEquityPriceFilter("AAPL")); err != nil {
 		log.Printf("Failed to subscribe to equity prices: %v", err)
 	}
 
@@ -173,17 +173,17 @@ func main() {
 
 	// Example 7: Subscribe to CLOB market price changes
 	// Filters are mandatory - provide token IDs
-	if err := typedSub.SubscribeToCLOBMarketPriceChanges(`["100","200"]`, nil); err != nil {
+	if err := typedSub.SubscribeToCLOBMarketPriceChanges(polymarketrealtime.NewCLOBMarketFilter("100", "200"), nil); err != nil {
 		log.Printf("Failed to subscribe to price changes: %v", err)
 	}
 
 	// Example 8: Subscribe to aggregated orderbook
-	if err := typedSub.SubscribeToCLOBMarketAggOrderbook(nil, `["100","200"]`); err != nil {
+	if err := typedSub.SubscribeToCLOBMarketAggOrderbook(polymarketrealtime.NewCLOBMarketFilter("100", "200"), nil); err != nil {
 		log.Printf("Failed to subscribe to agg orderbook: %v", err)
 	}
 
 	// Example 9: Subscribe to last trade price
-	if err := typedSub.SubscribeToCLOBMarketLastTradePrice(nil, `["100","200"]`); err != nil {
+	if err := typedSub.SubscribeToCLOBMarketLastTradePrice(polymarketrealtime.NewCLOBMarketFilter("100", "200"), nil); err != nil {
 		log.Printf("Failed to subscribe to last trade price: %v", err)
 	}
 
