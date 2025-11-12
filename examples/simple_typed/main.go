@@ -3,111 +3,112 @@ package main
 import (
 	"log"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 
 	polymarketdataclient "github.com/ivanzzeth/polymarket-go-real-time-data-client"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: Error loading .env file: %v", err)
-	}
+	log.Println("=== Simple Typed Subscription Example ===")
+	log.Println("This example shows how to use typed subscriptions with predefined symbols")
+	log.Println()
 
-	// Create a typed message router
+	// Create a message router for typed handling
 	router := polymarketdataclient.NewRealtimeMessageRouter()
 
-	// Register handler for CLOB user trades
-	router.RegisterCLOBTradeHandler(func(trade polymarketdataclient.CLOBTrade) error {
-		log.Printf("=== CLOB Trade ===")
-		log.Printf("ID: %s", trade.ID)
-		log.Printf("Market: %s", trade.Market)
-		log.Printf("Asset ID: %s", trade.AssetID)
-		log.Printf("Side: %s", trade.Side)
-		log.Printf("Price: %s", trade.Price.String())
-		log.Printf("Size: %s", trade.Size.String())
-		log.Printf("Status: %s", trade.Status)
-		log.Printf("Match Time: %s", trade.MatchTime)
-		log.Printf("Transaction Hash: %s", trade.TransactionHash)
-		log.Printf("Maker Orders Count: %d", len(trade.MakerOrders))
-		log.Println()
+	// Register handler for crypto prices
+	router.RegisterCryptoPriceHandler(func(price polymarketdataclient.CryptoPrice) error {
+		log.Printf("[Crypto] %s = $%s (updated at %s)",
+			price.Symbol,
+			price.Value.String(),
+			price.Time.Format("15:04:05"))
 		return nil
 	})
 
-	// Register handler for CLOB user orders
-	router.RegisterCLOBOrderHandler(func(order polymarketdataclient.CLOBOrder) error {
-		log.Printf("=== CLOB Order ===")
-		log.Printf("ID: %s", order.ID)
-		log.Printf("Market: %s", order.Market)
-		log.Printf("Type: %s", order.Type)
-		log.Printf("Side: %s", order.Side)
-		log.Printf("Price: %s", order.Price.String())
-		log.Printf("Original Size: %s", order.OriginalSize.String())
-		log.Printf("Size Matched: %s", order.SizeMatched.String())
-		log.Printf("Status: %s", order.Status)
-		log.Printf("Outcome: %s", order.Outcome)
-		log.Println()
+	// Register handler for equity prices
+	router.RegisterEquityPriceHandler(func(price polymarketdataclient.EquityPrice) error {
+		log.Printf("[Equity] %s = $%s (updated at %s)",
+			price.Symbol,
+			price.Value.String(),
+			price.Time.Format("15:04:05"))
 		return nil
 	})
 
-	// Create the WebSocket client
+	// Create client with message callback
 	client := polymarketdataclient.New(
 		polymarketdataclient.WithLogger(polymarketdataclient.NewSilentLogger()),
+		polymarketdataclient.WithAutoReconnect(true),
 		polymarketdataclient.WithOnConnect(func() {
-			log.Println("✓ Connected to Polymarket WebSocket!")
+			log.Println("✅ Connected to Polymarket WebSocket")
 		}),
 		polymarketdataclient.WithOnNewMessage(func(data []byte) {
-			// Route the message to the appropriate typed handler
-			if err := router.RouteMessage(data); err != nil {
-				log.Printf("Error routing message: %v", err)
-			}
+			router.RouteMessage(data)
 		}),
 	)
 
 	// Connect to the server
-	log.Println("Connecting to Polymarket...")
+	log.Println("Connecting to Polymarket WebSocket...")
 	if err := client.Connect(); err != nil {
 		log.Fatalf("Failed to connect: %v", err)
-	}
-
-	// Get credentials from environment
-	apiKey := os.Getenv("API_KEY")
-	apiSecret := os.Getenv("API_SECRET")
-	apiPassphrase := os.Getenv("API_PASSPHRASE")
-
-	if apiKey == "" || apiSecret == "" || apiPassphrase == "" {
-		log.Fatal("API_KEY, API_SECRET, and API_PASSPHRASE must be set in environment or .env file")
 	}
 
 	// Create typed subscription handler
 	typedSub := polymarketdataclient.NewRealtimeTypedSubscriptionHandler(client)
 
-	// Create CLOB authentication
-	clobAuth := polymarketdataclient.ClobAuth{
-		Key:        apiKey,
-		Secret:     apiSecret,
-		Passphrase: apiPassphrase,
+	// Subscribe to crypto prices using predefined filters
+	log.Println("\nSubscribing to crypto prices...")
+	cryptoFilters := []*polymarketdataclient.CryptoPriceFilter{
+		polymarketdataclient.NewBTCPriceFilter(),    // Bitcoin
+		polymarketdataclient.NewETHPriceFilter(),    // Ethereum
+		polymarketdataclient.NewSOLPriceFilter(),    // Solana
 	}
 
-	// Subscribe to all CLOB user events (orders and trades)
-	log.Println("Subscribing to CLOB user events...")
-	if err := typedSub.SubscribeToCLOBUserAll(clobAuth); err != nil {
-		log.Fatalf("Failed to subscribe: %v", err)
+	for _, filter := range cryptoFilters {
+		if err := typedSub.SubscribeToCryptoPrices(nil, filter); err != nil {
+			log.Printf("Failed to subscribe to %s: %v", filter.Symbol, err)
+		} else {
+			log.Printf("✓ Subscribed to %s", filter.Symbol)
+		}
 	}
 
-	log.Println("✓ Successfully subscribed!")
-	log.Println("Listening for orders and trades...")
+	// Subscribe to equity prices using predefined filters
+	log.Println("\nSubscribing to equity prices...")
+	equityFilters := []*polymarketdataclient.EquityPriceFilter{
+		polymarketdataclient.NewAppleStockFilter(),   // Apple
+		polymarketdataclient.NewTeslaStockFilter(),   // Tesla
+		polymarketdataclient.NewNvidiaStockFilter(),  // NVIDIA
+	}
+
+	for _, filter := range equityFilters {
+		if err := typedSub.SubscribeToEquityPrices(nil, filter); err != nil {
+			log.Printf("Failed to subscribe to %s: %v", filter.Symbol, err)
+		} else {
+			log.Printf("✓ Subscribed to %s", filter.Symbol)
+		}
+	}
+
+	// You can also use custom symbols with constants
+	log.Println("\nSubscribing to additional symbols using constants...")
+	customCrypto := polymarketdataclient.NewCryptoPriceFilter(polymarketdataclient.CryptoSymbolAVAXUSDT)
+	if err := typedSub.SubscribeToCryptoPrices(nil, customCrypto); err != nil {
+		log.Printf("Failed to subscribe: %v", err)
+	} else {
+		log.Printf("✓ Subscribed to %s", customCrypto.Symbol)
+	}
+
+	log.Println("\n=== Now receiving live price updates ===")
 	log.Println("Press Ctrl+C to exit")
 	log.Println()
 
-	// Keep the connection alive
-	time.Sleep(60 * time.Second)
+	// Wait for interrupt signal
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
 
-	// Clean up
-	log.Println("\nDisconnecting...")
+	log.Println("\nShutting down...")
 	if err := client.Disconnect(); err != nil {
-		log.Printf("Error disconnecting: %v", err)
+		log.Printf("Error during disconnect: %v", err)
 	}
-	log.Println("✓ Disconnected successfully")
+	log.Println("✅ Disconnected successfully")
 }

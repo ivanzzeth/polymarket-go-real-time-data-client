@@ -136,13 +136,13 @@ func main() {
 
 	// Example 4: Subscribe to crypto prices
 	// Subscribe to Bitcoin price updates
-	if err := typedSub.SubscribeToCryptoPrices(nil, polymarketrealtime.NewCryptoPriceFilter("btcusdt")); err != nil {
+	if err := typedSub.SubscribeToCryptoPrices(nil, polymarketrealtime.NewBTCPriceFilter()); err != nil {
 		log.Printf("Failed to subscribe to crypto prices: %v", err)
 	}
 
 	// Example 5: Subscribe to equity prices
 	// Subscribe to Apple stock price updates
-	if err := typedSub.SubscribeToEquityPrices(nil, polymarketrealtime.NewEquityPriceFilter("AAPL")); err != nil {
+	if err := typedSub.SubscribeToEquityPrices(nil, polymarketrealtime.NewAppleStockFilter()); err != nil {
 		log.Printf("Failed to subscribe to equity prices: %v", err)
 	}
 

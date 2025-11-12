@@ -57,23 +57,32 @@ func main() {
 
 	log.Println("Subscribing to price feeds...")
 
-	// Subscribe to crypto prices
-	cryptoSymbols := []string{"BTCUSDT", "ETHUSDT", "SOLUSDT"}
-	for _, symbol := range cryptoSymbols {
-		if err := typedSub.SubscribeToCryptoPrices(nil, polymarketdataclient.NewCryptoPriceFilter(symbol)); err != nil {
-			log.Printf("Failed to subscribe to %s: %v", symbol, err)
+	// Subscribe to crypto prices using predefined constants
+	cryptoFilters := []*polymarketdataclient.CryptoPriceFilter{
+		polymarketdataclient.NewBTCPriceFilter(),
+		polymarketdataclient.NewETHPriceFilter(),
+		polymarketdataclient.NewSOLPriceFilter(),
+	}
+	for _, filter := range cryptoFilters {
+		if err := typedSub.SubscribeToCryptoPrices(nil, filter); err != nil {
+			log.Printf("Failed to subscribe to %s: %v", filter.Symbol, err)
 		} else {
-			log.Printf("✓ Subscribed to %s", symbol)
+			log.Printf("✓ Subscribed to %s", filter.Symbol)
 		}
 	}
 
-	// Subscribe to equity prices
-	equitySymbols := []string{"AAPL", "TSLA", "NVDA", "MSFT"}
-	for _, symbol := range equitySymbols {
-		if err := typedSub.SubscribeToEquityPrices(nil, polymarketdataclient.NewEquityPriceFilter(symbol)); err != nil {
-			log.Printf("Failed to subscribe to %s: %v", symbol, err)
+	// Subscribe to equity prices using predefined constants
+	equityFilters := []*polymarketdataclient.EquityPriceFilter{
+		polymarketdataclient.NewAppleStockFilter(),
+		polymarketdataclient.NewTeslaStockFilter(),
+		polymarketdataclient.NewNvidiaStockFilter(),
+		polymarketdataclient.NewEquityPriceFilter(polymarketdataclient.EquitySymbolMSFT),
+	}
+	for _, filter := range equityFilters {
+		if err := typedSub.SubscribeToEquityPrices(nil, filter); err != nil {
+			log.Printf("Failed to subscribe to %s: %v", filter.Symbol, err)
 		} else {
-			log.Printf("✓ Subscribed to %s", symbol)
+			log.Printf("✓ Subscribed to %s", filter.Symbol)
 		}
 	}
 

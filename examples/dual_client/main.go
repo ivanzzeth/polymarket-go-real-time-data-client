@@ -80,7 +80,7 @@ func main() {
 
 	// Subscribe to Bitcoin price updates
 	realtimeTypedSub := polymarketdataclient.NewRealtimeTypedSubscriptionHandler(realtimeClient)
-	if err := realtimeTypedSub.SubscribeToCryptoPrices(nil, polymarketdataclient.NewCryptoPriceFilter("btcusdt")); err != nil {
+	if err := realtimeTypedSub.SubscribeToCryptoPrices(nil, polymarketdataclient.NewBTCPriceFilter()); err != nil {
 		log.Printf("Warning: Failed to subscribe to crypto prices: %v", err)
 	} else {
 		log.Println("✅ Subscribed to BTC price updates")

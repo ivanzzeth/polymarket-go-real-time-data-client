@@ -85,7 +85,7 @@ func main() {
 
 	// Subscribe to Bitcoin price
 	log.Println("Subscribing to BTC price updates...")
-	if err := typedSub.SubscribeToCryptoPrices(nil, polymarketdataclient.NewCryptoPriceFilter("btcusdt")); err != nil {
+	if err := typedSub.SubscribeToCryptoPrices(nil, polymarketdataclient.NewBTCPriceFilter()); err != nil {
 		log.Printf("Failed to subscribe: %v", err)
 	} else {
 		log.Println("✅ Successfully subscribed to BTC prices")
