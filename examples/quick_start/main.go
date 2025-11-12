@@ -15,7 +15,7 @@ func main() {
 		// polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
 		polymarketdataclient.WithLogger(polymarketdataclient.NewSilentLogger()),
 		polymarketdataclient.WithOnConnect(func() {
-			fmt.Println("Connected to Polymarket WebSocket!")
+			log.Println("Connected to Polymarket WebSocket!")
 		}),
 		polymarketdataclient.WithOnNewMessage(func(data []byte) {
 			// log.Printf("Received raw message: %s\n", string(data))
@@ -55,11 +55,16 @@ func main() {
 		panic(err)
 	}
 
+	// market you want to filter
+	event_slug := "btc-updown-15m-1762929900"
+
 	// Subscribe to market data
 	subscriptions := []polymarketdataclient.Subscription{
 		{
 			Topic: polymarketdataclient.TopicActivity,
-			Type:  polymarketdataclient.MessageTypeAll,
+			// Type:  polymarketdataclient.MessageTypeAll,
+			Type:    polymarketdataclient.MessageTypeTrades,
+			Filters: fmt.Sprintf(`{"event_slug":"%s"}`, event_slug),
 		},
 		{
 			Topic: polymarketdataclient.TopicComments,
