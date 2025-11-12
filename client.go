@@ -1,4 +1,4 @@
-package polymarketdataclient
+package polymarketrealtime
 
 import (
 	"errors"
@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	jsonutils "github.com/Matthew17-21/go-polymarket-real-time-data-client/internal/json_utils"
 	"github.com/gorilla/websocket"
+	jsonutils "github.com/ivanzzeth/polymarket-go-real-time-data-client/internal/json_utils"
 )
 
 type Client interface {

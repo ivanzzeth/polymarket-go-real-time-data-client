@@ -1,4 +1,4 @@
-package polymarketdataclient
+package polymarketrealtime
 
 // NOTE: This file is for the payloads that are sent by the server.
 // More info can be found here: https://github.com/Polymarket/real-time-data-client

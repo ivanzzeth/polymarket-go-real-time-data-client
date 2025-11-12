@@ -10,7 +10,7 @@ This Go client was inspired by [Polymarket's official TypeScript real-time data 
 ## Installation
 
 ```bash
-go get github.com/Matthew17-21/go-polymarket-real-time-data-client
+go get github.com/ivanzzeth/polymarket-go-real-time-data-client
 ```
 
 ## Quick Start
@@ -22,7 +22,7 @@ import (
     "fmt"
     "time"
     
-    polymarketdataclient "github.com/Matthew17-21/go-polymarket-real-time-data-client"
+    polymarketdataclient "github.com/ivanzzeth/polymarket-go-real-time-data-client"
 )
 
 func main() {
@@ -120,7 +120,7 @@ This client uses optimized JSON parsing instead of string searching for better p
 ```
 goos: darwin
 goarch: arm64
-pkg: github.com/Matthew17-21/go-polymarket-real-time-data-client/internal/json_utils
+pkg: github.com/ivanzzeth/polymarket-go-real-time-data-client/internal/json_utils
 cpu: Apple M3 Max
 
 BenchmarkIsJsonFormatVsPayloadCheck/IsJsonFormat-14         	29993344	40.68 ns/op

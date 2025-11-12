@@ -1,4 +1,4 @@
-package polymarketdataclient
+package polymarketrealtime
 
 import (
 	"encoding/json"

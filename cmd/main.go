@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	polymarketdataclient "github.com/Matthew17-21/go-polymarket-real-time-data-client"
+	polymarketdataclient "github.com/ivanzzeth/polymarket-go-real-time-data-client"
 )
 
 func main() {

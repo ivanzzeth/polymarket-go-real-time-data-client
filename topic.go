@@ -1,4 +1,4 @@
-package polymarketdataclient
+package polymarketrealtime
 
 type Topic string
 
