@@ -19,52 +19,81 @@ go get github.com/ivanzzeth/polymarket-go-real-time-data-client
 package main
 
 import (
-    "fmt"
-    "time"
-    
-    polymarketdataclient "github.com/ivanzzeth/polymarket-go-real-time-data-client"
+	"encoding/json"
+	"fmt"
+	"log"
+	"time"
+
+	polymarketdataclient "github.com/ivanzzeth/polymarket-go-real-time-data-client"
 )
 
 func main() {
-    // Create a new client with options
-    client := polymarketdataclient.New(
-        polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
-        polymarketdataclient.WithOnConnect(func() {
-            fmt.Println("Connected to Polymarket WebSocket!")
-        }),
-        polymarketdataclient.WithOnNewMessage(func(message []byte) {
-            fmt.Printf("Received: %s\n", string(message))
+	// Create a new client with options
+	client := polymarketdataclient.New(
+		// polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
+		polymarketdataclient.WithLogger(polymarketdataclient.NewSilentLogger()),
+		polymarketdataclient.WithOnConnect(func() {
+			fmt.Println("Connected to Polymarket WebSocket!")
+		}),
+		polymarketdataclient.WithOnNewMessage(func(data []byte) {
+			// log.Printf("Received raw message: %s\n", string(data))
 
-            // Handle any further message processing. Can use the types in `payload.go` to unmarshal
-        }),
-    )
+			var msg polymarketdataclient.SubscriptionMessage
+			err := json.Unmarshal(data, &msg)
+			if err != nil {
+				log.Printf("Invalid message %v received: %v", msg, err)
+				return
+			}
 
-    // Connect to the server
-    if err := client.Connect(); err != nil {
-        panic(err)
-    }
+			// fmt.Printf("Received msg: %s\n", string(data))
 
-    // Subscribe to market data
-    subscriptions := []polymarketdataclient.Subscription{
-        {
-            Topic: polymarketdataclient.TopicActivity,
-            Type:  polymarketdataclient.MessageTypeAll,
-        },
-        {
-            Topic: polymarketdataclient.TopicComments,
-            Type:  polymarketdataclient.MessageTypeCommentCreated,
-        },
-    }
+			switch msg.Topic {
+			case polymarketdataclient.TopicActivity:
+				switch msg.Type {
+				case polymarketdataclient.MessageTypeTrades:
+					var trade polymarketdataclient.Trade
+					err = json.Unmarshal(msg.Payload, &trade)
+					if err != nil {
+						log.Printf("Invalid trade %v received: %v", msg.Payload, err)
+						return
+					}
 
-    if err := client.Subscribe(subscriptions); err != nil {
-        panic(err)
-    }
+					log.Printf("Trade: %+v\n", trade)
+				}
+			case polymarketdataclient.TopicComments:
+				// TODO:
+			}
 
-    // Keep the connection alive
-    time.Sleep(30 * time.Second)
+			// Handle any further message processing. Can use the types in `payload.go` to unmarshal
+		}),
+	)
 
-    // Clean up
-    client.Disconnect()
+	// Connect to the server
+	if err := client.Connect(); err != nil {
+		panic(err)
+	}
+
+	// Subscribe to market data
+	subscriptions := []polymarketdataclient.Subscription{
+		{
+			Topic: polymarketdataclient.TopicActivity,
+			Type:  polymarketdataclient.MessageTypeAll,
+		},
+		{
+			Topic: polymarketdataclient.TopicComments,
+			Type:  polymarketdataclient.MessageTypeCommentCreated,
+		},
+	}
+
+	if err := client.Subscribe(subscriptions); err != nil {
+		panic(err)
+	}
+
+	// Keep the connection alive
+	time.Sleep(30 * time.Second)
+
+	// Clean up
+	client.Disconnect()
 }
 ```
 
