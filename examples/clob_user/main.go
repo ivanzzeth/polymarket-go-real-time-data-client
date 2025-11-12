@@ -108,7 +108,7 @@ func main() {
 	markets := []string{
 		// Example market IDs - replace with real ones
 		// "0x1234567890abcdef...",
-		"0xf95edd63d6ece5e59b7e8d26bec3881fe96df161b40aa85991f4182c8fac559d",
+		"0xae29d682edf60b00fe19ae6bd5b88ebdb2ac16a2107c0ef3661fa4cb3da0a973",
 	}
 
 	if len(markets) > 0 {

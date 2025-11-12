@@ -328,6 +328,7 @@ type TickSizeChange struct {
 }
 
 // ClobMarket represents CLOB market information.
+// This is used for both market_created and market_resolved message types.
 type ClobMarket struct {
 	Market       string          `json:"market"`         // Market or condition ID
 	AssetIDs     []string        `json:"asset_ids"`      // Array of two ERC1155 asset ID identifiers associated with market

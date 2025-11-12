@@ -37,7 +37,7 @@ func main() {
 
 	// Create client with message callback
 	client := polymarketdataclient.New(
-		polymarketdataclient.WithLogger(polymarketdataclient.NewSilentLogger()),
+		polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
 		polymarketdataclient.WithAutoReconnect(true),
 		polymarketdataclient.WithOnConnect(func() {
 			log.Println("✅ Connected to Polymarket WebSocket")
@@ -59,9 +59,9 @@ func main() {
 	// Subscribe to crypto prices using predefined filters
 	log.Println("\nSubscribing to crypto prices...")
 	cryptoFilters := []*polymarketdataclient.CryptoPriceFilter{
-		polymarketdataclient.NewBTCPriceFilter(),    // Bitcoin
-		polymarketdataclient.NewETHPriceFilter(),    // Ethereum
-		polymarketdataclient.NewSOLPriceFilter(),    // Solana
+		polymarketdataclient.NewBTCPriceFilter(), // Bitcoin
+		polymarketdataclient.NewETHPriceFilter(), // Ethereum
+		polymarketdataclient.NewSOLPriceFilter(), // Solana
 	}
 
 	for _, filter := range cryptoFilters {
@@ -75,9 +75,9 @@ func main() {
 	// Subscribe to equity prices using predefined filters
 	log.Println("\nSubscribing to equity prices...")
 	equityFilters := []*polymarketdataclient.EquityPriceFilter{
-		polymarketdataclient.NewAppleStockFilter(),   // Apple
-		polymarketdataclient.NewTeslaStockFilter(),   // Tesla
-		polymarketdataclient.NewNvidiaStockFilter(),  // NVIDIA
+		polymarketdataclient.NewAppleStockFilter(),  // Apple
+		polymarketdataclient.NewTeslaStockFilter(),  // Tesla
+		polymarketdataclient.NewNvidiaStockFilter(), // NVIDIA
 	}
 
 	for _, filter := range equityFilters {

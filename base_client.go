@@ -235,6 +235,74 @@ func (c *baseClient) subscribe(subscriptions []Subscription) error {
 	return nil
 }
 
+// unsubscribe sends unsubscription requests to the server
+func (c *baseClient) unsubscribe(subscriptions []Subscription) error {
+	c.connMu.RLock()
+	defer c.connMu.RUnlock()
+
+	if c.conn == nil {
+		return errors.New("not connected")
+	}
+
+	c.internal.mu.RLock()
+	isClosed := c.internal.connClosed
+	c.internal.mu.RUnlock()
+
+	if isClosed {
+		return errors.New("connection closed")
+	}
+
+	// Remove subscriptions from stored list
+	c.internal.mu.Lock()
+	// Create a map for quick lookup
+	toRemove := make(map[string]bool)
+	for _, sub := range subscriptions {
+		key := string(sub.Topic) + "|" + string(sub.Type) + "|" + sub.Filters
+		toRemove[key] = true
+	}
+
+	// Filter out subscriptions to remove
+	newSubs := make([]Subscription, 0)
+	for _, sub := range c.internal.subscriptions {
+		key := string(sub.Topic) + "|" + string(sub.Type) + "|" + sub.Filters
+		if !toRemove[key] {
+			newSubs = append(newSubs, sub)
+		}
+	}
+	c.internal.subscriptions = newSubs
+	c.internal.mu.Unlock()
+
+	// Format unsubscription message using protocol
+	// Note: CLOB protocols use the same format with different action
+	message, err := c.protocol.FormatSubscription(subscriptions)
+	if err != nil {
+		return err
+	}
+
+	// Replace "subscribe" with "unsubscribe" in the message
+	// This is a simple approach that works for the current protocol format
+	messageStr := string(message)
+	if strings.Contains(messageStr, `"action":"subscribe"`) {
+		messageStr = strings.Replace(messageStr, `"action":"subscribe"`, `"action":"unsubscribe"`, 1)
+	} else if strings.Contains(messageStr, `"type":"MARKET"`) {
+		// CLOB protocol uses different format
+		messageStr = strings.Replace(messageStr, `"type":"MARKET"`, `"type":"UNSUBSCRIBE"`, 1)
+	}
+	message = []byte(messageStr)
+
+	c.logger.Debug("Sending unsubscription message: %s", string(message))
+
+	// Send unsubscription
+	err = c.conn.WriteMessage(websocket.TextMessage, message)
+	if err != nil {
+		return err
+	}
+
+	c.logger.Info("Unsubscribed from %d channels", len(subscriptions))
+
+	return nil
+}
+
 // ping sends periodic ping messages to keep the connection alive
 func (c *baseClient) ping() {
 	ticker := time.NewTicker(c.pingInterval)

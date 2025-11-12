@@ -54,6 +54,11 @@ func (c *ClobUserClient) Subscribe(subscriptions []Subscription) error {
 	return c.baseClient.subscribe(subscriptions)
 }
 
+// Unsubscribe unsubscribes from CLOB User channels
+func (c *ClobUserClient) Unsubscribe(subscriptions []Subscription) error {
+	return c.baseClient.unsubscribe(subscriptions)
+}
+
 // ClobMarketClient is a WebSocket client for the CLOB Market endpoint
 // It provides real-time market data including orderbook updates and price changes
 type ClobMarketClient struct {
@@ -103,4 +108,9 @@ func (c *ClobMarketClient) Disconnect() error {
 //	err := client.Subscribe(subscriptions)
 func (c *ClobMarketClient) Subscribe(subscriptions []Subscription) error {
 	return c.baseClient.subscribe(subscriptions)
+}
+
+// Unsubscribe unsubscribes from CLOB Market channels
+func (c *ClobMarketClient) Unsubscribe(subscriptions []Subscription) error {
+	return c.baseClient.unsubscribe(subscriptions)
 }
