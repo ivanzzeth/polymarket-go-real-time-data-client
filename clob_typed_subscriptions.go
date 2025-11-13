@@ -254,7 +254,11 @@ func (r *ClobMarketMessageRouter) RouteMessage(data []byte) error {
 	// Parse the message to determine event type
 	var raw map[string]interface{}
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return fmt.Errorf("err: %v, raw=%s", err, string(data))
+		maxLen := len(data)
+		if maxLen > 200 {
+			maxLen = 200
+		}
+		return fmt.Errorf("failed to unmarshal: %w (len=%d, data=%q)", err, len(data), string(data[:maxLen]))
 	}
 
 	eventType, ok := raw["event_type"].(string)

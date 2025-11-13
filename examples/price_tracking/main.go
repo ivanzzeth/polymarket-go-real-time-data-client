@@ -33,7 +33,7 @@ func main() {
 
 	// Create the WebSocket client
 	client := polymarketdataclient.New(
-		polymarketdataclient.WithLogger(polymarketdataclient.NewSilentLogger()),
+		polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
 		polymarketdataclient.WithOnConnect(func() {
 			log.Println("✓ Connected to Polymarket WebSocket!")
 		}),

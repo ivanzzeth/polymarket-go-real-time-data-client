@@ -11,88 +11,90 @@ const (
 	defaultReconnectBackoffMax  = 30 * time.Second
 )
 
-type ClientOptions func(*client)
-
-// defaultOpts sets the default options for the client
-func defaultOpts() ClientOptions {
-	return func(c *client) {
-		c.host = defaultHost
-		c.pingInterval = defaultPingInterval
-		c.logger = NewSilentLogger()
-		c.autoReconnect = defaultAutoReconnect
-		c.maxReconnectAttempts = defaultMaxReconnectAttempts
-		c.reconnectBackoffInit = defaultReconnectBackoffInit
-		c.reconnectBackoffMax = defaultReconnectBackoffMax
-	}
+// Config contains all configuration options for the WebSocket client
+type Config struct {
+	Host                 string
+	Logger               Logger
+	PingInterval         time.Duration
+	AutoReconnect        bool
+	MaxReconnectAttempts int
+	ReconnectBackoffInit time.Duration
+	ReconnectBackoffMax  time.Duration
+	OnConnectCallback    func()
+	OnNewMessage         func([]byte)
+	OnDisconnectCallback func(error)
+	OnReconnectCallback  func()
 }
+
+type ClientOptions func(*Config)
 
 // WithLogger sets the logger for the client
 func WithLogger(l Logger) ClientOptions {
-	return func(c *client) {
-		c.logger = l
+	return func(c *Config) {
+		c.Logger = l
 	}
 }
 
 // WithPingInterval sets the ping interval for the client
 func WithPingInterval(interval time.Duration) ClientOptions {
-	return func(c *client) {
-		c.pingInterval = interval
+	return func(c *Config) {
+		c.PingInterval = interval
 	}
 }
 
 // WithHost sets the host for the client
 func WithHost(host string) ClientOptions {
-	return func(c *client) {
-		c.host = host
+	return func(c *Config) {
+		c.Host = host
 	}
 }
 
 // WithOnConnect sets the onConnect callback for the client
 func WithOnConnect(f func()) ClientOptions {
-	return func(c *client) {
-		c.onConnectCallback = f
+	return func(c *Config) {
+		c.OnConnectCallback = f
 	}
 }
 
 func WithOnNewMessage(f func([]byte)) ClientOptions {
-	return func(c *client) {
-		c.onNewMessage = f
+	return func(c *Config) {
+		c.OnNewMessage = f
 	}
 }
 
 // WithAutoReconnect enables or disables automatic reconnection on connection failures
 func WithAutoReconnect(enabled bool) ClientOptions {
-	return func(c *client) {
-		c.autoReconnect = enabled
+	return func(c *Config) {
+		c.AutoReconnect = enabled
 	}
 }
 
 // WithMaxReconnectAttempts sets the maximum number of reconnection attempts
 // Set to 0 for infinite retries
 func WithMaxReconnectAttempts(max int) ClientOptions {
-	return func(c *client) {
-		c.maxReconnectAttempts = max
+	return func(c *Config) {
+		c.MaxReconnectAttempts = max
 	}
 }
 
 // WithReconnectBackoff sets the initial and maximum backoff duration for reconnection attempts
 func WithReconnectBackoff(initial, max time.Duration) ClientOptions {
-	return func(c *client) {
-		c.reconnectBackoffInit = initial
-		c.reconnectBackoffMax = max
+	return func(c *Config) {
+		c.ReconnectBackoffInit = initial
+		c.ReconnectBackoffMax = max
 	}
 }
 
 // WithOnDisconnect sets a callback that is called when the connection is lost
 func WithOnDisconnect(f func(error)) ClientOptions {
-	return func(c *client) {
-		c.onDisconnectCallback = f
+	return func(c *Config) {
+		c.OnDisconnectCallback = f
 	}
 }
 
 // WithOnReconnect sets a callback that is called when reconnection succeeds
 func WithOnReconnect(f func()) ClientOptions {
-	return func(c *client) {
-		c.onReconnectCallback = f
+	return func(c *Config) {
+		c.OnReconnectCallback = f
 	}
 }

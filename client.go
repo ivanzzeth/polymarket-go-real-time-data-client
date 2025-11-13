@@ -1,16 +1,28 @@
 package polymarketrealtime
 
-import (
-	"errors"
-	"fmt"
-	"net/url"
-	"sync"
-	"time"
+// Subscription represents a subscription to a topic and message type
+type Subscription struct {
+	Topic   Topic       `json:"topic"`
+	Type    MessageType `json:"type"`
+	Filters string      `json:"filters,omitempty"`
 
-	"github.com/gorilla/websocket"
-	jsonutils "github.com/ivanzzeth/polymarket-go-real-time-data-client/internal/json_utils"
-)
+	ClobAuth  *ClobAuth  `json:"clob_auth,omitempty"`
+	GammaAuth *GammaAuth `json:"gamma_auth,omitempty"`
+}
 
+// ClobAuth contains authentication information for CLOB subscriptions
+type ClobAuth struct {
+	Key        string `json:"key"`
+	Secret     string `json:"secret"`
+	Passphrase string `json:"passphrase"`
+}
+
+// GammaAuth contains authentication information for Gamma subscriptions
+type GammaAuth struct {
+	Address string `json:"address"`
+}
+
+// Client interface for backward compatibility
 type Client interface {
 	// Connect establishes a WebSocket connection to the server
 	Connect() error
@@ -25,328 +37,36 @@ type Client interface {
 	Unsubscribe(subscriptions []Subscription) error
 }
 
-// client wraps the real-time protocol client
-// This maintains backward compatibility with existing code
+// client is a thin wrapper around baseClient for backward compatibility
+// It uses the RealtimeProtocol which supports multiple topics
 type client struct {
-	// User-provided options (kept for ClientOptions compatibility)
-	logger                Logger
-	pingInterval          time.Duration
-	host                  string
-	onConnectCallback     func()
-	onNewMessage          func([]byte)
-	autoReconnect         bool
-	maxReconnectAttempts  int
-	reconnectBackoffInit  time.Duration
-	reconnectBackoffMax   time.Duration
-	onDisconnectCallback  func(error)
-	onReconnectCallback   func()
-
-	// Internal struct to store the internal state of the client
-	internal struct {
-		// Underlying websocket connection
-		conn       *websocket.Conn
-		mu         sync.RWMutex
-		done       chan struct{}
-		connClosed bool
-
-		// Reconnection state
-		reconnectAttempts int
-		subscriptions     []Subscription // Store subscriptions for restoration
-		isReconnecting    bool
-	}
+	*baseClient
 }
 
+// New creates a new client using the baseClient infrastructure
+// This provides backward compatibility while using the improved baseClient implementation
 func New(opts ...ClientOptions) Client {
-	c := &client{
-		internal: struct {
-			conn              *websocket.Conn
-			mu                sync.RWMutex
-			done              chan struct{}
-			connClosed        bool
-			reconnectAttempts int
-			subscriptions     []Subscription
-			isReconnecting    bool
-		}{
-			done:          make(chan struct{}),
-			subscriptions: make([]Subscription, 0),
-		},
-	}
-
-	// Set the default options
-	defaultOpts()(c)
-
-	// Apply the user-provided options
-	for _, opt := range opts {
-		opt(c)
-	}
-
-	// Return the client
-	return c
+	protocol := NewRealtimeProtocol()
+	base := newBaseClient(protocol, opts...)
+	return &client{baseClient: base}
 }
 
 // Connect establishes a WebSocket connection to the server
 func (c *client) Connect() error {
-	c.internal.mu.Lock()
-	defer c.internal.mu.Unlock()
-
-	// Check if the connection is closed permanently (user called Disconnect)
-	if c.internal.connClosed && !c.internal.isReconnecting {
-		return fmt.Errorf("client is closed")
-	}
-
-	// Parse the host URL
-	c.logger.Debug("Attempting to parse the host URL. host_url=%q", c.host)
-	u, err := url.Parse(c.host)
-	if err != nil {
-		return fmt.Errorf("invalid host URL: %w", err)
-	}
-
-	// Dial the WebSocket connection
-	c.logger.Debug("Attempting to dial the WebSocket connection. host_obj=%+v host_url_string=%q", u, u.String())
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		return fmt.Errorf("failed to connect: %w", err)
-	}
-	c.internal.conn = conn
-
-	// Reset done channel if reconnecting
-	if c.internal.isReconnecting {
-		c.internal.done = make(chan struct{})
-		c.internal.connClosed = false
-	}
-
-	// Call the onConnectCallback if it is set
-	if c.onConnectCallback != nil {
-		c.onConnectCallback()
-	}
-
-	// Start background tasks
-	go c.readMessages()
-	go c.pingScheduler()
-	c.logger.Debug("Connection established successfully!")
-	return nil
+	return c.baseClient.connect()
 }
 
-// Disconnect closes the WebSocket connection and disables auto-reconnect
+// Disconnect closes the WebSocket connection
 func (c *client) Disconnect() error {
-	c.internal.mu.Lock()
-	defer c.internal.mu.Unlock()
-
-	// Check if already closed
-	if c.internal.connClosed {
-		return errors.New("connection is nil")
-	}
-
-	// Check if the connection is nil
-	if c.internal.conn == nil {
-		return errors.New("connection is nil")
-	}
-
-	// Disable auto-reconnect when user explicitly disconnects
-	c.autoReconnect = false
-
-	// Update the flags first
-	c.internal.connClosed = true
-	close(c.internal.done)
-
-	c.logger.Debug("Attempting to close the connection...")
-	err := c.internal.conn.Close()
-	c.internal.conn = nil // Set to nil after closing
-
-	if err != nil {
-		c.logger.Error("error closing the connection: %v", err)
-		return fmt.Errorf("error while closing the connection: %w", err)
-	}
-	c.logger.Debug("Connection closed successfully!")
-	return nil
+	return c.baseClient.disconnect()
 }
 
-// subscriptionMessage is the message sent to the server to subscribe to a topic
-type subscriptionMessage struct {
-	Action        string         `json:"action"`
-	Subscriptions []Subscription `json:"subscriptions"`
-}
-
-type Subscription struct {
-	Topic   Topic       `json:"topic"`
-	Type    MessageType `json:"type"`
-	Filters string      `json:"filters,omitempty"`
-
-	ClobAuth  *ClobAuth  `json:"clob_auth,omitempty"`
-	GammaAuth *GammaAuth `json:"gamma_auth,omitempty"`
-}
-
-type ClobAuth struct {
-	Key        string `json:"key"`
-	Secret     string `json:"secret"`
-	Passphrase string `json:"passphrase"`
-}
-
-type GammaAuth struct {
-	Address string `json:"address"`
-}
-
-// Subscribe sends a subscription message to the server
+// Subscribe sends subscription requests to the server
 func (c *client) Subscribe(subscriptions []Subscription) error {
-	c.internal.mu.Lock()
-	defer c.internal.mu.Unlock()
-
-	if c.internal.conn == nil {
-		return fmt.Errorf("not connected")
-	}
-
-	// Store subscriptions for reconnection
-	c.internal.subscriptions = append(c.internal.subscriptions, subscriptions...)
-
-	// Create the subscription message
-	subscribeMsg := subscriptionMessage{
-		Action:        "subscribe",
-		Subscriptions: subscriptions,
-	}
-
-	// Send the subscription message
-	c.logger.Debug("Attempting to send subscription message. payload=%+v", subscribeMsg)
-	err := c.internal.conn.WriteJSON(subscribeMsg)
-	if err != nil {
-		c.logger.Error("error sending subscription message: %v", err)
-		return fmt.Errorf("error while sending subscription message: %w", err)
-	}
-	c.logger.Debug("Subscription message sent successfully!")
-	return nil
+	return c.baseClient.subscribe(subscriptions)
 }
 
-// Unsubscribe sends an unsubscription message to the server
+// Unsubscribe sends unsubscription requests to the server
 func (c *client) Unsubscribe(subscriptions []Subscription) error {
-	c.internal.mu.RLock()
-	defer c.internal.mu.RUnlock()
-
-	// Check if the connection is nil
-	if c.internal.conn == nil {
-		return fmt.Errorf("not connected")
-	}
-
-	// Create the unsubscribe message
-	unsubscribeMsg := subscriptionMessage{
-		Action:        "unsubscribe",
-		Subscriptions: subscriptions,
-	}
-
-	// Send the unsubscribe message
-	c.logger.Debug("Attempting to send unsubscribe message. payload=%+v", unsubscribeMsg)
-	err := c.internal.conn.WriteJSON(unsubscribeMsg)
-	if err != nil {
-		c.logger.Error("error sending unsubscribe message: %v", err)
-		return fmt.Errorf("error while sending unsubscribe message: %w", err)
-	}
-	c.logger.Debug("Unsubscribe message sent successfully!")
-	return nil
-}
-
-// pingScheduler sends periodic ping messages to keep the connection alive
-func (c *client) pingScheduler() {
-	ticker := time.NewTicker(c.pingInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		// If the client is closed, stop the ping scheduler
-		case <-c.internal.done:
-			return
-
-		// If the ticker is triggered, send a ping message
-		case <-ticker.C:
-			if err := c.sendPing(); err != nil {
-				c.logger.Error("error sending ping message: %v", err)
-				return // Stop the ping scheduler
-			}
-		}
-	}
-}
-
-// sendPing sends a `ping` message to the server
-func (c *client) sendPing() error {
-	// Lock the mutex to prevent race conditions
-	c.internal.mu.RLock()
-	defer c.internal.mu.RUnlock()
-
-	// If the connection is nil, skip the ping
-	if c.internal.conn == nil {
-		return errors.New("connection is nil")
-	}
-
-	// If the connection is not nil, send a ping message
-	c.logger.Debug("Attempting to send ping message...")
-	err := c.internal.conn.WriteMessage(websocket.TextMessage, []byte("ping"))
-	if err != nil {
-		c.logger.Error("error sending ping message: %v", err)
-		return fmt.Errorf("error while sending ping message: %w", err)
-	}
-	c.logger.Debug("Ping message sent successfully!")
-	return nil
-}
-
-// readMessages handles incoming WebSocket messages
-func (c *client) readMessages() {
-	defer func() {
-		c.logger.Debug("readMessages goroutine exiting")
-	}()
-
-	for {
-		select {
-		case <-c.internal.done:
-			return
-		default: // Have a default case to prevent blocking
-			// Read the message
-			c.internal.mu.RLock()
-			conn := c.internal.conn
-			c.internal.mu.RUnlock()
-
-			if conn == nil {
-				c.logger.Debug("Connection is nil. Exiting......")
-				return
-			}
-
-			messageType, messageBytes, err := conn.ReadMessage()
-			if err != nil {
-				c.logger.Error("read error: %v", err)
-
-				// Call disconnect callback
-				if c.onDisconnectCallback != nil {
-					c.onDisconnectCallback(err)
-				}
-
-				// Check if should reconnect
-				if c.autoReconnect && c.isRecoverableError(err) {
-					c.logger.Info("Connection lost, attempting to reconnect...")
-					go c.reconnect()
-				}
-				return
-			}
-			messageStr := string(messageBytes)
-			c.logger.Debug("Received message. message_type=%d message_str=%q", messageType, messageStr)
-
-			// Check if the message is a pong, if so, skip it
-			if messageType == websocket.PongMessage || (messageType == websocket.TextMessage && messageStr == "ping") {
-				c.logger.Debug("Received pong message. Skipping...")
-				continue
-			}
-
-			// Check if the message is a valid JSON format.
-			// In Polymarket's example, they check if the string "payload" is in the message.
-			// However, we will check if the message is a valid JSON format.
-			if !jsonutils.IsJsonFormat(messageStr) {
-				c.logger.Debug("Received invalid JSON message. Skipping...")
-				continue
-			}
-			c.logger.Debug("Received valid JSON message.")
-
-			// Check if the onNewMessage callback is set.
-			if c.onNewMessage == nil {
-				c.logger.Debug("onNewMessage callback is not set. Skipping...")
-				continue
-			}
-			c.logger.Debug("Sending to onNewMessage callback...")
-			c.onNewMessage(messageBytes)
-			c.logger.Debug("onNewMessage callback sent successfully!")
-		}
-	}
+	return c.baseClient.unsubscribe(subscriptions)
 }

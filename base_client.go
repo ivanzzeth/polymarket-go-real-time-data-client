@@ -13,6 +13,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// writeRequest represents a request to write a message to the WebSocket
+type writeRequest struct {
+	messageType int
+	data        []byte
+}
+
 // baseClient contains the common WebSocket infrastructure shared by all client types
 type baseClient struct {
 	// Protocol-specific behavior
@@ -51,28 +57,43 @@ type baseClient struct {
 	// Channels for control flow
 	closeChan chan struct{}
 	closeOnce sync.Once
+	writeChan chan writeRequest // Channel for serializing WebSocket writes
 }
 
 // newBaseClient creates a new base client with the given protocol and options
 func newBaseClient(protocol Protocol, opts ...ClientOptions) *baseClient {
-	c := &baseClient{
-		protocol:  protocol,
-		closeChan: make(chan struct{}),
+	// Create config with defaults
+	config := &Config{
+		Host:                 protocol.GetDefaultHost(),
+		Logger:               NewSilentLogger(),
+		PingInterval:         defaultPingInterval,
+		AutoReconnect:        defaultAutoReconnect,
+		MaxReconnectAttempts: defaultMaxReconnectAttempts,
+		ReconnectBackoffInit: defaultReconnectBackoffInit,
+		ReconnectBackoffMax:  defaultReconnectBackoffMax,
 	}
 
-	// Set defaults
-	c.host = protocol.GetDefaultHost()
-	c.pingInterval = defaultPingInterval
-	c.logger = NewSilentLogger()
-	c.autoReconnect = defaultAutoReconnect
-	c.maxReconnectAttempts = defaultMaxReconnectAttempts
-	c.reconnectBackoffInit = defaultReconnectBackoffInit
-	c.reconnectBackoffMax = defaultReconnectBackoffMax
-
-	// Apply user options using adapter
-	adapter := &clientOptionsAdapter{baseClient: c}
+	// Apply user options to config
 	for _, opt := range opts {
-		adapter.applyOption(opt)
+		opt(config)
+	}
+
+	// Create base client with config
+	c := &baseClient{
+		protocol:             protocol,
+		closeChan:            make(chan struct{}),
+		writeChan:            make(chan writeRequest, 100), // Buffered channel for writes
+		host:                 config.Host,
+		logger:               config.Logger,
+		pingInterval:         config.PingInterval,
+		autoReconnect:        config.AutoReconnect,
+		maxReconnectAttempts: config.MaxReconnectAttempts,
+		reconnectBackoffInit: config.ReconnectBackoffInit,
+		reconnectBackoffMax:  config.ReconnectBackoffMax,
+		onConnectCallback:    config.OnConnectCallback,
+		onNewMessage:         config.OnNewMessage,
+		onDisconnectCallback: config.OnDisconnectCallback,
+		onReconnectCallback:  config.OnReconnectCallback,
 	}
 
 	return c
@@ -132,6 +153,7 @@ func (c *baseClient) connect() error {
 	// Start goroutines
 	go c.ping()
 	go c.readMessages()
+	go c.writeLoop()
 
 	// Call connect callback
 	if c.onConnectCallback != nil {
@@ -224,15 +246,14 @@ func (c *baseClient) subscribe(subscriptions []Subscription) error {
 
 	c.logger.Debug("Sending subscription message: %s", string(message))
 
-	// Send subscription
-	err = c.conn.WriteMessage(websocket.TextMessage, message)
-	if err != nil {
-		return err
+	// Send subscription through write channel
+	select {
+	case c.writeChan <- writeRequest{messageType: websocket.TextMessage, data: message}:
+		c.logger.Info("Subscribed to %d channels", len(subscriptions))
+		return nil
+	case <-time.After(5 * time.Second):
+		return errors.New("timeout sending subscription message")
 	}
-
-	c.logger.Info("Subscribed to %d channels", len(subscriptions))
-
-	return nil
 }
 
 // unsubscribe sends unsubscription requests to the server
@@ -292,15 +313,14 @@ func (c *baseClient) unsubscribe(subscriptions []Subscription) error {
 
 	c.logger.Debug("Sending unsubscription message: %s", string(message))
 
-	// Send unsubscription
-	err = c.conn.WriteMessage(websocket.TextMessage, message)
-	if err != nil {
-		return err
+	// Send unsubscription through write channel
+	select {
+	case c.writeChan <- writeRequest{messageType: websocket.TextMessage, data: message}:
+		c.logger.Info("Unsubscribed from %d channels", len(subscriptions))
+		return nil
+	case <-time.After(5 * time.Second):
+		return errors.New("timeout sending unsubscription message")
 	}
-
-	c.logger.Info("Unsubscribed from %d channels", len(subscriptions))
-
-	return nil
 }
 
 // ping sends periodic ping messages to keep the connection alive
@@ -337,6 +357,41 @@ func (c *baseClient) ping() {
 			}
 
 			c.logger.Debug("Ping sent")
+		}
+	}
+}
+
+// writeLoop serializes all WebSocket writes through a channel
+func (c *baseClient) writeLoop() {
+	defer func() {
+		c.logger.Debug("Write loop stopped")
+	}()
+
+	for {
+		select {
+		case <-c.closeChan:
+			return
+		case req := <-c.writeChan:
+			c.connMu.RLock()
+			conn := c.conn
+			c.connMu.RUnlock()
+
+			if conn == nil {
+				continue
+			}
+
+			c.internal.mu.RLock()
+			isClosed := c.internal.connClosed
+			c.internal.mu.RUnlock()
+
+			if isClosed {
+				continue
+			}
+
+			err := conn.WriteMessage(req.messageType, req.data)
+			if err != nil {
+				c.logger.Error("Error writing message (type=%d): %v", req.messageType, err)
+			}
 		}
 	}
 }
@@ -393,7 +448,26 @@ func (c *baseClient) readMessages() {
 		// Handle different message types
 		switch messageType {
 		case websocket.TextMessage:
-			c.logger.Debug("Received message: %s", string(message))
+			// Skip empty messages
+			if len(message) == 0 {
+				c.logger.Debug("Received empty message, skipping")
+				continue
+			}
+
+			// Skip ping/pong messages
+			msgStr := string(message)
+			if msgStr == "PING" || msgStr == "PONG" {
+				c.logger.Debug("Received PING/PONG, skipping")
+				continue
+			}
+
+			// // Skip non-JSON messages
+			// if message[0] != '{' && message[0] != '[' {
+			// 	c.logger.Debug("Received non-JSON message (len=%d, data=%q), skipping", len(message), msgStr)
+			// 	continue
+			// }
+
+			c.logger.Debug("Received valid message (len=%d): %s", len(message), msgStr)
 
 			// Call message callback
 			if c.onNewMessage != nil {
@@ -577,44 +651,6 @@ func (c *baseClient) restoreSubscriptions() {
 	} else {
 		c.logger.Info("Successfully restored subscriptions")
 	}
-}
-
-// applyOptions applies client options to base client (needed for option compatibility)
-type clientOptionsAdapter struct {
-	*baseClient
-}
-
-func (c *clientOptionsAdapter) applyOption(opt ClientOptions) {
-	// Create a temporary client wrapper that satisfies the client interface
-	tempClient := &client{
-		host:                  c.host,
-		pingInterval:          c.pingInterval,
-		logger:                c.logger,
-		autoReconnect:         c.autoReconnect,
-		maxReconnectAttempts:  c.maxReconnectAttempts,
-		reconnectBackoffInit:  c.reconnectBackoffInit,
-		reconnectBackoffMax:   c.reconnectBackoffMax,
-		onConnectCallback:     c.onConnectCallback,
-		onNewMessage:          c.onNewMessage,
-		onDisconnectCallback:  c.onDisconnectCallback,
-		onReconnectCallback:   c.onReconnectCallback,
-	}
-
-	// Apply option
-	opt(tempClient)
-
-	// Copy back
-	c.host = tempClient.host
-	c.pingInterval = tempClient.pingInterval
-	c.logger = tempClient.logger
-	c.autoReconnect = tempClient.autoReconnect
-	c.maxReconnectAttempts = tempClient.maxReconnectAttempts
-	c.reconnectBackoffInit = tempClient.reconnectBackoffInit
-	c.reconnectBackoffMax = tempClient.reconnectBackoffMax
-	c.onConnectCallback = tempClient.onConnectCallback
-	c.onNewMessage = tempClient.onNewMessage
-	c.onDisconnectCallback = tempClient.onDisconnectCallback
-	c.onReconnectCallback = tempClient.onReconnectCallback
 }
 
 // Helper function to convert subscriptions to JSON (used by realtime protocol)

@@ -558,7 +558,12 @@ func (r *RealtimeMessageRouter) RegisterClobMarketHandler(handler ClobMarketCall
 func (r *RealtimeMessageRouter) RouteMessage(data []byte) error {
 	var msg Message
 	if err := json.Unmarshal(data, &msg); err != nil {
-		return fmt.Errorf("failed to unmarshal message: %w, %s", err, string(data))
+		// Print raw data with length info for debugging
+		maxLen := len(data)
+		if maxLen > 200 {
+			maxLen = 200
+		}
+		return fmt.Errorf("failed to unmarshal message: %w (len=%d, data=%q)", err, len(data), string(data[:maxLen]))
 	}
 
 	switch msg.Topic {
