@@ -90,7 +90,7 @@ type ActivityOrdersMatchedCallback func(trade Trade) error
 //
 // Filter format: {"event_slug":"string"} OR {"market_slug":"string"}
 // filter: Optional ActivityFilter to filter by market or event slug
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityOrdersMatched(callback ActivityOrdersMatchedCallback, filter *ActivityFilter) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityOrdersMatched(filter *ActivityFilter, callback ActivityOrdersMatchedCallback) error {
 	// Register callback to internal router if provided
 	if callback != nil {
 		h.router.RegisterActivityOrdersMatchedHandler(callback)
@@ -126,7 +126,7 @@ type CommentCreatedCallback func(comment Comment) error
 //
 // Filter format: {"event_slug":"string"} OR {"series_slug":"string"}
 // filter: Optional CommentFilter to filter by event or series slug
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentCreated(callback CommentCreatedCallback, filter *CommentFilter) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentCreated(filter *CommentFilter, callback CommentCreatedCallback) error {
 	// Register callback to internal router if provided
 	if callback != nil {
 		h.router.RegisterCommentCreatedHandler(callback)
@@ -160,7 +160,7 @@ type CommentRemovedCallback func(comment Comment) error
 //
 // Filter format: {"event_slug":"string"} OR {"series_slug":"string"}
 // filter: Optional CommentFilter to filter by event or series slug
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentRemoved(callback CommentRemovedCallback, filter *CommentFilter) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentRemoved(filter *CommentFilter, callback CommentRemovedCallback) error {
 	// Register callback to internal router if provided
 	if callback != nil {
 		h.router.RegisterCommentRemovedHandler(callback)
@@ -194,7 +194,7 @@ type ReactionCreatedCallback func(reaction Reaction) error
 //
 // Filter format: {"event_slug":"string"} OR {"series_slug":"string"}
 // filter: Optional CommentFilter to filter by event or series slug
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionCreated(callback ReactionCreatedCallback, filter *CommentFilter) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionCreated(filter *CommentFilter, callback ReactionCreatedCallback) error {
 	// Register callback to internal router if provided
 	if callback != nil {
 		h.router.RegisterReactionCreatedHandler(callback)
@@ -228,7 +228,7 @@ type ReactionRemovedCallback func(reaction Reaction) error
 //
 // Filter format: {"event_slug":"string"} OR {"series_slug":"string"}
 // filter: Optional CommentFilter to filter by event or series slug
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionRemoved(callback ReactionRemovedCallback, filter *CommentFilter) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionRemoved(filter *CommentFilter, callback ReactionRemovedCallback) error {
 	// Register callback to internal router if provided
 	if callback != nil {
 		h.router.RegisterReactionRemovedHandler(callback)
@@ -428,7 +428,7 @@ type CryptoPriceCallback func(price CryptoPrice) error
 //	ethSub.SubscribeToCryptoPrices(nil, polymarketrealtime.NewETHPriceFilter())
 //
 // filter: CryptoPriceFilter with symbol (e.g., "btcusdt")
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPrices(callback CryptoPriceCallback, filter *CryptoPriceFilter) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPrices(filter *CryptoPriceFilter, callback CryptoPriceCallback) error {
 	if filter == nil {
 		return fmt.Errorf("filter is required for crypto price subscription")
 	}
@@ -458,7 +458,7 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPrices(callback Cryp
 // See SubscribeToCryptoPrices documentation for details on handling multiple symbols.
 //
 // filter: CryptoPriceFilter with symbol (e.g., "btcusdt")
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPricesChainlink(callback CryptoPriceCallback, filter *CryptoPriceFilter) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPricesChainlink(filter *CryptoPriceFilter, callback CryptoPriceCallback) error {
 	if filter == nil {
 		return fmt.Errorf("filter is required for crypto price chainlink subscription")
 	}
@@ -493,7 +493,7 @@ type EquityPriceCallback func(price EquityPrice) error
 // See SubscribeToCryptoPrices documentation for details on handling multiple symbols.
 //
 // filter: EquityPriceFilter with symbol (e.g., "AAPL")
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToEquityPrices(callback EquityPriceCallback, filter *EquityPriceFilter) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToEquityPrices(filter *EquityPriceFilter, callback EquityPriceCallback) error {
 	if filter == nil {
 		return fmt.Errorf("filter is required for equity price subscription")
 	}
@@ -523,7 +523,7 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToEquityPrices(callback Equi
 type CLOBOrderCallback func(order CLOBOrder) error
 
 // SubscribeToCLOBUserOrders subscribes to CLOB user orders
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserOrders(auth ClobAuth, callback CLOBOrderCallback) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserOrders(auth *ClobAuth, callback CLOBOrderCallback) error {
 	// Register callback to internal router if provided
 	if callback != nil {
 		h.router.RegisterCLOBOrderHandler(callback)
@@ -533,7 +533,7 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserOrders(auth ClobAu
 		{
 			Topic:    TopicClobUser,
 			Type:     MessageTypeOrder,
-			ClobAuth: &auth,
+			ClobAuth: auth,
 		},
 	})
 }
@@ -542,7 +542,7 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserOrders(auth ClobAu
 type CLOBTradeCallback func(trade CLOBTrade) error
 
 // SubscribeToCLOBUserTrades subscribes to CLOB user trades
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserTrades(auth ClobAuth, callback CLOBTradeCallback) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserTrades(auth *ClobAuth, callback CLOBTradeCallback) error {
 	// Register callback to internal router if provided
 	if callback != nil {
 		h.router.RegisterCLOBTradeHandler(callback)
@@ -552,7 +552,7 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserTrades(auth ClobAu
 		{
 			Topic:    TopicClobUser,
 			Type:     MessageTypeTrade,
-			ClobAuth: &auth,
+			ClobAuth: auth,
 		},
 	})
 }
@@ -564,12 +564,12 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserTrades(auth ClobAu
 //
 //	typedSub.GetRouter().RegisterCLOBOrderHandler(func(order CLOBOrder) error { ... })
 //	typedSub.GetRouter().RegisterCLOBTradeHandler(func(trade CLOBTrade) error { ... })
-func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserAll(auth ClobAuth) error {
+func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserAll(auth *ClobAuth) error {
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:    TopicClobUser,
 			Type:     MessageTypeAll,
-			ClobAuth: &auth,
+			ClobAuth: auth,
 		},
 	})
 }

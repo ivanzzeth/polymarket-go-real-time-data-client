@@ -39,13 +39,13 @@ func main() {
 
 	// Subscribe to a single crypto price with callback
 	filter := polymarketdataclient.NewCryptoPriceFilter(symbolToMonitor)
-	if err := client.SubscribeToCryptoPrices(func(price polymarketdataclient.CryptoPrice) error {
+	if err := client.SubscribeToCryptoPrices(filter, func(price polymarketdataclient.CryptoPrice) error {
 		log.Printf("[Crypto] %s = $%s (time: %s)",
 			price.Symbol,
 			price.Value.String(),
 			price.Time.Format("15:04:05.000"))
 		return nil
-	}, filter); err != nil {
+	}); err != nil {
 		log.Fatalf("Failed to subscribe to %s: %v", symbolToMonitor, err)
 	}
 	log.Printf("✓ Subscribed to %s\n", symbolToMonitor)

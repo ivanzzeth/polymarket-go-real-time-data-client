@@ -121,7 +121,7 @@ func main() {
 
 	// Example 3: Subscribe to comments for a specific event
 	// Filter by parentEntityID and parentEntityType
-	if err := client.SubscribeToCommentCreated(nil, polymarketrealtime.NewCommentFilter().WithEventID(100)); err != nil {
+	if err := client.SubscribeToCommentCreated(polymarketrealtime.NewCommentFilter().WithEventID(100), nil); err != nil {
 		log.Printf("Failed to subscribe to comments: %v", err)
 	}
 
@@ -129,7 +129,7 @@ func main() {
 	// IMPORTANT: crypto_prices topic only supports ONE symbol per connection
 	// Subscribe to Bitcoin price updates
 	// NOTE: If you need to monitor multiple crypto symbols, create separate client connections
-	if err := client.SubscribeToCryptoPrices(nil, polymarketrealtime.NewBTCPriceFilter()); err != nil {
+	if err := client.SubscribeToCryptoPrices(polymarketrealtime.NewBTCPriceFilter(), nil); err != nil {
 		log.Printf("Failed to subscribe to crypto prices: %v", err)
 	}
 
@@ -156,12 +156,12 @@ func main() {
 		}
 
 		// Subscribe to user orders
-		if err := client.SubscribeToCLOBUserOrders(clobAuth, nil); err != nil {
+		if err := client.SubscribeToCLOBUserOrders(&clobAuth, nil); err != nil {
 			log.Printf("Failed to subscribe to CLOB user orders: %v", err)
 		}
 
 		// Subscribe to user trades
-		if err := client.SubscribeToCLOBUserTrades(clobAuth, nil); err != nil {
+		if err := client.SubscribeToCLOBUserTrades(&clobAuth, nil); err != nil {
 			log.Printf("Failed to subscribe to CLOB user trades: %v", err)
 		}
 	} else {

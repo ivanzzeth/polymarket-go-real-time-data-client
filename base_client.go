@@ -379,7 +379,8 @@ func (c *baseClient) ping() {
 				return
 			}
 
-			err := conn.WriteMessage(websocket.PingMessage, nil)
+			err := conn.WriteMessage(websocket.TextMessage, []byte("PING"))
+			// err := conn.WriteMessage(websocket.PingMessage, nil)
 			if err != nil {
 				c.logger.Error("Error sending ping: %v", err)
 				continue

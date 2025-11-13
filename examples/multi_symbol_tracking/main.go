@@ -62,7 +62,7 @@ func main() {
 
 			// Subscribe to this specific symbol
 			filter := polymarketdataclient.NewCryptoPriceFilter(symbol)
-			if err := client.SubscribeToCryptoPrices(func(price polymarketdataclient.CryptoPrice) error {
+			if err := client.SubscribeToCryptoPrices(filter, func(price polymarketdataclient.CryptoPrice) error {
 				// Increment message count
 				count := 1
 				if val, ok := messageCount.Load(symbol); ok {
@@ -75,7 +75,7 @@ func main() {
 					price.Value.String(),
 					count)
 				return nil
-			}, filter); err != nil {
+			}); err != nil {
 				log.Printf("Failed to subscribe to [%s]: %v", symbol, err)
 				client.Disconnect()
 				return
