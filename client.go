@@ -22,8 +22,8 @@ type GammaAuth struct {
 	Address string `json:"address"`
 }
 
-// Client interface for backward compatibility
-type Client interface {
+// WsClient interface for backward compatibility
+type WsClient interface {
 	// Connect establishes a WebSocket connection to the server
 	Connect() error
 
@@ -37,36 +37,43 @@ type Client interface {
 	Unsubscribe(subscriptions []Subscription) error
 }
 
-// client is a thin wrapper around baseClient for backward compatibility
+// Client is a thin wrapper around baseClient for backward compatibility
 // It uses the RealtimeProtocol which supports multiple topics
-type client struct {
+type Client struct {
 	*baseClient
+
+	*RealtimeTypedSubscriptionHandler
 }
 
 // New creates a new client using the baseClient infrastructure
 // This provides backward compatibility while using the improved baseClient implementation
-func New(opts ...ClientOptions) Client {
+func New(opts ...ClientOptions) *Client {
 	protocol := NewRealtimeProtocol()
 	base := newBaseClient(protocol, opts...)
-	return &client{baseClient: base}
+	cli := &Client{baseClient: base}
+
+	handler := NewRealtimeTypedSubscriptionHandler(cli)
+
+	cli.RealtimeTypedSubscriptionHandler = handler
+	return cli
 }
 
 // Connect establishes a WebSocket connection to the server
-func (c *client) Connect() error {
+func (c *Client) Connect() error {
 	return c.baseClient.connect()
 }
 
 // Disconnect closes the WebSocket connection
-func (c *client) Disconnect() error {
+func (c *Client) Disconnect() error {
 	return c.baseClient.disconnect()
 }
 
 // Subscribe sends subscription requests to the server
-func (c *client) Subscribe(subscriptions []Subscription) error {
+func (c *Client) Subscribe(subscriptions []Subscription) error {
 	return c.baseClient.subscribe(subscriptions)
 }
 
 // Unsubscribe sends unsubscription requests to the server
-func (c *client) Unsubscribe(subscriptions []Subscription) error {
+func (c *Client) Unsubscribe(subscriptions []Subscription) error {
 	return c.baseClient.unsubscribe(subscriptions)
 }

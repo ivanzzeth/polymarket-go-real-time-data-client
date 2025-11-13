@@ -20,6 +20,7 @@ type Config struct {
 	MaxReconnectAttempts int
 	ReconnectBackoffInit time.Duration
 	ReconnectBackoffMax  time.Duration
+
 	OnConnectCallback    func()
 	OnNewMessage         func([]byte)
 	OnDisconnectCallback func(error)

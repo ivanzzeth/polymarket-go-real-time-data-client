@@ -9,30 +9,14 @@ import (
 //
 // This handler combines subscription management with message routing. It internally maintains
 // a RealtimeMessageRouter that routes incoming messages to registered callbacks.
-//
-// Basic usage:
-//
-//	// Create handler and client together
-//	typedSub, client := polymarketrealtime.NewRealtimeTypedSubscriptionHandlerWithOptions(
-//	    polymarketrealtime.WithLogger(polymarketrealtime.NewLogger()),
-//	    polymarketrealtime.WithAutoReconnect(true),
-//	)
-//
-//	client.Connect()
-//
-//	// Subscribe with callback
-//	typedSub.SubscribeToCryptoPrices(func(price CryptoPrice) error {
-//	    log.Printf("Price: %s = $%s", price.Symbol, price.Value.String())
-//	    return nil
-//	}, filter)
 type RealtimeTypedSubscriptionHandler struct {
-	client Client
+	client WsClient
 	router *RealtimeMessageRouter
 }
 
 // NewRealtimeTypedSubscriptionHandler creates a new typed subscription handler for real-time data
 // The client parameter can be nil and set later using SetClient()
-func NewRealtimeTypedSubscriptionHandler(client Client) *RealtimeTypedSubscriptionHandler {
+func NewRealtimeTypedSubscriptionHandler(client WsClient) *RealtimeTypedSubscriptionHandler {
 	return &RealtimeTypedSubscriptionHandler{
 		client: client,
 		router: NewRealtimeMessageRouter(),
@@ -41,14 +25,7 @@ func NewRealtimeTypedSubscriptionHandler(client Client) *RealtimeTypedSubscripti
 
 // NewRealtimeTypedSubscriptionHandlerWithOptions creates a handler and client together
 // This is the recommended way to create a handler as it automatically configures the router
-//
-// Example:
-//
-//	typedSub, client := polymarketrealtime.NewRealtimeTypedSubscriptionHandlerWithOptions(
-//	    polymarketrealtime.WithLogger(polymarketrealtime.NewLogger()),
-//	    polymarketrealtime.WithAutoReconnect(true),
-//	)
-func NewRealtimeTypedSubscriptionHandlerWithOptions(opts ...ClientOptions) (*RealtimeTypedSubscriptionHandler, Client) {
+func NewRealtimeTypedSubscriptionHandlerWithOptions(opts ...ClientOptions) (*RealtimeTypedSubscriptionHandler, WsClient) {
 	handler := &RealtimeTypedSubscriptionHandler{
 		router: NewRealtimeMessageRouter(),
 	}
@@ -79,7 +56,7 @@ func (h *RealtimeTypedSubscriptionHandler) GetRouter() *RealtimeMessageRouter {
 
 // SetClient sets the client for this handler
 // This is useful when you create the handler before the client
-func (h *RealtimeTypedSubscriptionHandler) SetClient(client Client) {
+func (h *RealtimeTypedSubscriptionHandler) SetClient(client WsClient) {
 	h.client = client
 }
 

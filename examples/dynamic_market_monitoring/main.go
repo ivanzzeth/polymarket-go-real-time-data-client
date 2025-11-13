@@ -13,7 +13,7 @@ import (
 
 // MarketMonitor manages dynamic subscriptions for markets
 type MarketMonitor struct {
-	client              polymarketdataclient.Client
+	client              polymarketdataclient.WsClient
 	typedSub            *polymarketdataclient.RealtimeTypedSubscriptionHandler
 	activeMarkets       map[string]bool // market ID -> active status
 	marketSubscriptions map[string][]polymarketdataclient.Subscription
@@ -21,7 +21,7 @@ type MarketMonitor struct {
 }
 
 // NewMarketMonitor creates a new market monitor
-func NewMarketMonitor(client polymarketdataclient.Client, typedSub *polymarketdataclient.RealtimeTypedSubscriptionHandler) *MarketMonitor {
+func NewMarketMonitor(client polymarketdataclient.WsClient, typedSub *polymarketdataclient.RealtimeTypedSubscriptionHandler) *MarketMonitor {
 	return &MarketMonitor{
 		client:              client,
 		typedSub:            typedSub,

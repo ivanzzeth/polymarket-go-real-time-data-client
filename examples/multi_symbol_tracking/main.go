@@ -27,7 +27,7 @@ func main() {
 	var messageCount sync.Map // map[string]int
 
 	// Create separate client for each symbol
-	var clients []polymarketdataclient.Client
+	var clients []polymarketdataclient.WsClient
 	var wg sync.WaitGroup
 
 	for _, symbol := range symbols {
