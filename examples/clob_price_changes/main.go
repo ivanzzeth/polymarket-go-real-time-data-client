@@ -16,11 +16,39 @@ func main() {
 	log.Println("This example demonstrates subscribing to real-time price changes from CLOB markets")
 	log.Println()
 
-	// Create a message router for typed handling
-	router := polymarketdataclient.NewRealtimeMessageRouter()
+	// Create client
+	client := polymarketdataclient.New(
+		polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
+		polymarketdataclient.WithAutoReconnect(true),
+		polymarketdataclient.WithOnConnect(func() {
+			log.Println("✅ Connected to Polymarket WebSocket")
+		}),
+		polymarketdataclient.WithOnDisconnect(func(err error) {
+			log.Printf("❌ Disconnected: %v", err)
+		}),
+		polymarketdataclient.WithOnReconnect(func() {
+			log.Println("🔄 Reconnected successfully")
+		}),
+	)
 
-	// Register handler for price changes
-	router.RegisterPriceChangesHandler(func(priceChanges polymarketdataclient.PriceChanges) error {
+	// Connect to the server
+	log.Println("Connecting to Polymarket WebSocket...")
+	if err := client.Connect(); err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+
+	// Subscribe to price changes for specific token IDs
+	// You can find token IDs on https://clob.polymarket.com/
+	// Example: Presidential Election 2024 market
+	tokenIDs := []string{
+		"20244656410496119633637176580888572822795336808693757973566456523317429619143",
+	}
+
+	log.Println("\nSubscribing to price changes...")
+	log.Printf("Token IDs: %v", tokenIDs)
+
+	filter := polymarketdataclient.NewCLOBMarketFilter(tokenIDs...)
+	if err := client.SubscribeToCLOBMarketPriceChanges(filter, func(priceChanges polymarketdataclient.PriceChanges) error {
 		log.Printf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 		log.Printf("[Price Changes] Market: %s", priceChanges.Market)
 		log.Printf("  Timestamp: %s", priceChanges.Timestamp)
@@ -48,41 +76,7 @@ func main() {
 		}
 
 		return nil
-	})
-
-	// Create client
-	client := polymarketdataclient.New(
-		polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
-		polymarketdataclient.WithAutoReconnect(true),
-		polymarketdataclient.WithOnConnect(func() {
-			log.Println("✅ Connected to Polymarket WebSocket")
-		}),
-		polymarketdataclient.WithOnDisconnect(func(err error) {
-			log.Printf("❌ Disconnected: %v", err)
-		}),
-		polymarketdataclient.WithOnReconnect(func() {
-			log.Println("🔄 Reconnected successfully")
-		}),
-	)
-
-	// Connect to the server
-	log.Println("Connecting to Polymarket WebSocket...")
-	if err := client.Connect(); err != nil {
-		log.Fatalf("Failed to connect: %v", err)
-	}
-
-	// Subscribe to price changes for specific token IDs
-	// You can find token IDs on https://clob.polymarket.com/
-	// Example: Presidential Election 2024 market
-	tokenIDs := []string{
-		"87263549609442107846940966542305431913459334507901399837670195489634390247458",
-	}
-
-	log.Println("\nSubscribing to price changes...")
-	log.Printf("Token IDs: %v", tokenIDs)
-
-	filter := polymarketdataclient.NewCLOBMarketFilter(tokenIDs...)
-	if err := client.SubscribeToCLOBMarketPriceChanges(filter, nil); err != nil {
+	}); err != nil {
 		log.Fatalf("Failed to subscribe: %v", err)
 	}
 

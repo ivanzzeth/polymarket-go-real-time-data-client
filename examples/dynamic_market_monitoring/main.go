@@ -256,18 +256,6 @@ func main() {
 	// Create market monitor
 	monitor = NewMarketMonitor(client)
 
-	// Create router for lifecycle events
-	lifecycleRouter := polymarketdataclient.NewRealtimeMessageRouter()
-	lifecycleRouter.RegisterClobMarketHandler(func(market polymarketdataclient.ClobMarket) error {
-		// Note: This receives both created and resolved events
-		// We'll need to differentiate by checking the message type in the raw message
-		// For this demo, we assume the first time we see a market it's created
-		if !monitor.IsMarketActive(market.Market) && len(market.AssetIDs) > 0 {
-			return monitor.OnMarketCreated(market)
-		}
-		return nil
-	})
-
 	// Create separate client for market lifecycle events
 	lifecycleClient := polymarketdataclient.New(
 		// polymarketdataclient.WithHost("wss://ws-subscriptions-clob.polymarket.com/ws/market"),

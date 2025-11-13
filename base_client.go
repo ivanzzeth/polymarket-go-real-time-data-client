@@ -565,6 +565,7 @@ func (c *baseClient) isRecoverableError(err error) bool {
 	return false
 }
 
+// TODO: Fix reconnect
 // reconnect attempts to reconnect to the WebSocket server with exponential backoff
 func (c *baseClient) reconnect() {
 	c.internal.mu.Lock()
