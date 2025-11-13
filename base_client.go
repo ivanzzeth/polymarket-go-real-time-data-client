@@ -379,14 +379,16 @@ func (c *baseClient) ping() {
 				return
 			}
 
-			err := conn.WriteMessage(websocket.TextMessage, []byte("PING"))
+			// err := conn.WriteMessage(websocket.TextMessage, []byte("ping"))
 			// err := conn.WriteMessage(websocket.PingMessage, nil)
-			if err != nil {
-				c.logger.Error("Error sending ping: %v", err)
-				continue
-			}
+			// if err != nil {
+			// 	c.logger.Error("Error sending ping: %v", err)
+			// 	continue
+			// }
 
-			c.logger.Debug("Ping sent")
+			c.writeChan <- writeRequest{websocket.TextMessage, []byte("ping")}
+
+			// c.logger.Debug("Ping sent")
 		}
 	}
 }
@@ -417,6 +419,8 @@ func (c *baseClient) writeLoop() {
 			if isClosed {
 				continue
 			}
+
+			c.logger.Debug("Write message %v: %v", req.messageType, string(req.data))
 
 			err := conn.WriteMessage(req.messageType, req.data)
 			if err != nil {
@@ -475,6 +479,8 @@ func (c *baseClient) readMessages() {
 			return
 		}
 
+		c.logger.Debug("Received raw message (len=%d): %s", len(message), string(message))
+
 		// Handle different message types
 		switch messageType {
 		case websocket.TextMessage:
@@ -486,7 +492,7 @@ func (c *baseClient) readMessages() {
 
 			// Skip ping/pong messages
 			msgStr := string(message)
-			if msgStr == "PING" || msgStr == "PONG" {
+			if msgStr == "PING" || msgStr == "PONG" || msgStr == "ping" || msgStr == "pong" {
 				c.logger.Debug("Received PING/PONG, skipping")
 				continue
 			}
@@ -569,6 +575,7 @@ func (c *baseClient) isRecoverableError(err error) bool {
 // TODO: Fix reconnect
 // reconnect attempts to reconnect to the WebSocket server with exponential backoff
 func (c *baseClient) reconnect() {
+	c.logger.Debug("Trying to reconnect...")
 	c.internal.mu.Lock()
 
 	// Check if already reconnecting
@@ -588,12 +595,15 @@ func (c *baseClient) reconnect() {
 	for {
 		// Check if we should stop reconnecting
 		c.internal.mu.RLock()
-		if !c.autoReconnect || c.internal.connClosed {
+		if !c.autoReconnect {
 			c.internal.mu.RUnlock()
+
 			c.internal.mu.Lock()
 			c.internal.isReconnecting = false
 			c.internal.mu.Unlock()
-			return
+
+			time.Sleep(100 * time.Millisecond)
+			continue
 		}
 
 		// Check max attempts
@@ -647,6 +657,7 @@ func (c *baseClient) reconnect() {
 		c.internal.mu.Lock()
 		c.internal.isReconnecting = false
 		c.internal.reconnectAttempts = 0
+		c.internal.connClosed = false
 		c.internal.mu.Unlock()
 
 		return

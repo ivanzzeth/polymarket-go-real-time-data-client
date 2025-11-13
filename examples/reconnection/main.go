@@ -25,7 +25,7 @@ func main() {
 	// Create client with reconnection enabled
 	client := polymarketdataclient.New(
 		// Enable detailed logging to see reconnection attempts
-		// polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
+		polymarketdataclient.WithLogger(polymarketdataclient.NewLogger()),
 
 		// Configure reconnection behavior
 		polymarketdataclient.WithAutoReconnect(true),
