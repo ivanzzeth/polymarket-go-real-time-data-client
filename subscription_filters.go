@@ -1,6 +1,10 @@
 package polymarketrealtime
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 // ActivityFilter represents the filter configuration for activity subscriptions
 type ActivityFilter struct {
@@ -11,12 +15,19 @@ type ActivityFilter struct {
 }
 
 // ToJSON converts the filter to JSON string
-func (f *ActivityFilter) ToJSON() string {
+// Returns error if filter is invalid (both Market and AssetID are empty)
+func (f *ActivityFilter) ToJSON() (string, error) {
 	if f == nil {
-		return ""
+		return "", nil
 	}
-	data, _ := json.Marshal(f)
-	return string(data)
+	if f.Market == "" && f.AssetID == "" {
+		return "", fmt.Errorf("ActivityFilter: at least one of Market or AssetID must be specified")
+	}
+	data, err := json.Marshal(f)
+	if err != nil {
+		return "", fmt.Errorf("ActivityFilter: failed to marshal to JSON: %w", err)
+	}
+	return string(data), nil
 }
 
 // CommentFilter represents the filter configuration for comment subscriptions
@@ -28,12 +39,19 @@ type CommentFilter struct {
 }
 
 // ToJSON converts the filter to JSON string
-func (f *CommentFilter) ToJSON() string {
+// Returns error if filter is invalid (both EventID and SeriesID are zero)
+func (f *CommentFilter) ToJSON() (string, error) {
 	if f == nil {
-		return ""
+		return "", nil
 	}
-	data, _ := json.Marshal(f)
-	return string(data)
+	if f.EventID == 0 && f.SeriesID == 0 {
+		return "", fmt.Errorf("CommentFilter: at least one of EventID or SeriesID must be specified")
+	}
+	data, err := json.Marshal(f)
+	if err != nil {
+		return "", fmt.Errorf("CommentFilter: failed to marshal to JSON: %w", err)
+	}
+	return string(data), nil
 }
 
 // CryptoPriceFilter represents the filter configuration for crypto price subscriptions
@@ -43,12 +61,23 @@ type CryptoPriceFilter struct {
 }
 
 // ToJSON converts the filter to JSON string
-func (f *CryptoPriceFilter) ToJSON() string {
+// Returns error if filter is invalid (symbol is empty)
+func (f *CryptoPriceFilter) ToJSON() (string, error) {
 	if f == nil {
-		return ""
+		return "", fmt.Errorf("CryptoPriceFilter: filter cannot be nil")
 	}
-	data, _ := json.Marshal(f)
-	return string(data)
+	if f.Symbol == "" {
+		return "", fmt.Errorf("CryptoPriceFilter: symbol must be specified")
+	}
+	// Validate symbol format (should be lowercase)
+	if strings.ToLower(f.Symbol) != f.Symbol {
+		return "", fmt.Errorf("CryptoPriceFilter: symbol must be lowercase (e.g., 'btcusdt' not 'BTCUSDT')")
+	}
+	data, err := json.Marshal(f)
+	if err != nil {
+		return "", fmt.Errorf("CryptoPriceFilter: failed to marshal to JSON: %w", err)
+	}
+	return string(data), nil
 }
 
 // EquityPriceFilter represents the filter configuration for equity price subscriptions
@@ -58,12 +87,23 @@ type EquityPriceFilter struct {
 }
 
 // ToJSON converts the filter to JSON string
-func (f *EquityPriceFilter) ToJSON() string {
+// Returns error if filter is invalid (symbol is empty)
+func (f *EquityPriceFilter) ToJSON() (string, error) {
 	if f == nil {
-		return ""
+		return "", fmt.Errorf("EquityPriceFilter: filter cannot be nil")
 	}
-	data, _ := json.Marshal(f)
-	return string(data)
+	if f.Symbol == "" {
+		return "", fmt.Errorf("EquityPriceFilter: symbol must be specified")
+	}
+	// Validate symbol format (should be uppercase)
+	if strings.ToUpper(f.Symbol) != f.Symbol {
+		return "", fmt.Errorf("EquityPriceFilter: symbol must be uppercase (e.g., 'AAPL' not 'aapl')")
+	}
+	data, err := json.Marshal(f)
+	if err != nil {
+		return "", fmt.Errorf("EquityPriceFilter: failed to marshal to JSON: %w", err)
+	}
+	return string(data), nil
 }
 
 // CLOBMarketFilter represents the filter configuration for CLOB market subscriptions
@@ -73,13 +113,26 @@ type CLOBMarketFilter struct {
 }
 
 // ToJSON converts the filter to JSON string
-func (f *CLOBMarketFilter) ToJSON() string {
-	if f == nil || len(f.TokenIDs) == 0 {
-		return ""
+// Returns error if filter is invalid (token IDs are empty)
+func (f *CLOBMarketFilter) ToJSON() (string, error) {
+	if f == nil {
+		return "", fmt.Errorf("CLOBMarketFilter: filter cannot be nil")
+	}
+	if len(f.TokenIDs) == 0 {
+		return "", fmt.Errorf("CLOBMarketFilter: at least one token ID must be specified")
+	}
+	// Validate token IDs are not empty strings
+	for i, tokenID := range f.TokenIDs {
+		if tokenID == "" {
+			return "", fmt.Errorf("CLOBMarketFilter: token ID at index %d is empty", i)
+		}
 	}
 	// The API expects a JSON array format like ["100","200"]
-	data, _ := json.Marshal(f.TokenIDs)
-	return string(data)
+	data, err := json.Marshal(f.TokenIDs)
+	if err != nil {
+		return "", fmt.Errorf("CLOBMarketFilter: failed to marshal to JSON: %w", err)
+	}
+	return string(data), nil
 }
 
 // NewActivityFilter creates a new activity filter

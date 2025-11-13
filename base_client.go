@@ -233,27 +233,56 @@ func (c *baseClient) subscribe(subscriptions []Subscription) error {
 		return errors.New("connection closed")
 	}
 
-	// Store subscriptions for potential reconnection
+	// Add new subscriptions to stored list (with deduplication)
 	c.internal.mu.Lock()
-	c.internal.subscriptions = append(c.internal.subscriptions, subscriptions...)
+
+	// Create a map of existing subscriptions for quick lookup
+	existing := make(map[string]bool)
+	for _, sub := range c.internal.subscriptions {
+		key := string(sub.Topic) + "|" + string(sub.Type) + "|" + sub.Filters
+		existing[key] = true
+	}
+
+	// Only add subscriptions that don't already exist
+	newSubs := []Subscription{}
+	for _, sub := range subscriptions {
+		key := string(sub.Topic) + "|" + string(sub.Type) + "|" + sub.Filters
+		if !existing[key] {
+			c.internal.subscriptions = append(c.internal.subscriptions, sub)
+			newSubs = append(newSubs, sub)
+			existing[key] = true
+		}
+	}
+
+	totalCount := len(c.internal.subscriptions)
 	c.internal.mu.Unlock()
 
-	// Format subscription message using protocol
-	message, err := c.protocol.FormatSubscription(subscriptions)
-	if err != nil {
-		return err
+	// Send each subscription individually
+	// Note: Some topics (like crypto_prices, crypto_prices_chainlink, equity_prices) only support
+	// ONE symbol per connection. For these topics, the last subscription will replace previous ones.
+	// If you need multiple symbols for these topics, create separate client connections.
+	//
+	// Other topics (like clob_market, activity, comments) may support multiple subscriptions.
+	for _, sub := range newSubs {
+		// Format subscription message for this single subscription
+		message, err := c.protocol.FormatSubscription([]Subscription{sub})
+		if err != nil {
+			return err
+		}
+
+		c.logger.Debug("Sending subscription message: %s", string(message))
+
+		// Send subscription through write channel
+		select {
+		case c.writeChan <- writeRequest{messageType: websocket.TextMessage, data: message}:
+			// Success
+		case <-time.After(5 * time.Second):
+			return errors.New("timeout sending subscription message")
+		}
 	}
 
-	c.logger.Debug("Sending subscription message: %s", string(message))
-
-	// Send subscription through write channel
-	select {
-	case c.writeChan <- writeRequest{messageType: websocket.TextMessage, data: message}:
-		c.logger.Info("Subscribed to %d channels", len(subscriptions))
-		return nil
-	case <-time.After(5 * time.Second):
-		return errors.New("timeout sending subscription message")
-	}
+	c.logger.Info("Subscribed to %d new channels (%d total)", len(newSubs), totalCount)
+	return nil
 }
 
 // unsubscribe sends unsubscription requests to the server
@@ -271,6 +300,32 @@ func (c *baseClient) unsubscribe(subscriptions []Subscription) error {
 
 	if isClosed {
 		return errors.New("connection closed")
+	}
+
+	// First send unsubscribe message for the subscriptions to remove
+	unsubMessage, err := c.protocol.FormatSubscription(subscriptions)
+	if err != nil {
+		return err
+	}
+
+	// Replace "subscribe" with "unsubscribe" in the message
+	messageStr := string(unsubMessage)
+	if strings.Contains(messageStr, `"action":"subscribe"`) {
+		messageStr = strings.Replace(messageStr, `"action":"subscribe"`, `"action":"unsubscribe"`, 1)
+	} else if strings.Contains(messageStr, `"type":"MARKET"`) {
+		// CLOB protocol uses different format
+		messageStr = strings.Replace(messageStr, `"type":"MARKET"`, `"type":"UNSUBSCRIBE"`, 1)
+	}
+	unsubMessage = []byte(messageStr)
+
+	c.logger.Debug("Sending unsubscription message: %s", string(unsubMessage))
+
+	// Send unsubscription through write channel
+	select {
+	case c.writeChan <- writeRequest{messageType: websocket.TextMessage, data: unsubMessage}:
+		c.logger.Debug("Unsubscription message sent")
+	case <-time.After(5 * time.Second):
+		return errors.New("timeout sending unsubscription message")
 	}
 
 	// Remove subscriptions from stored list
@@ -293,34 +348,8 @@ func (c *baseClient) unsubscribe(subscriptions []Subscription) error {
 	c.internal.subscriptions = newSubs
 	c.internal.mu.Unlock()
 
-	// Format unsubscription message using protocol
-	// Note: CLOB protocols use the same format with different action
-	message, err := c.protocol.FormatSubscription(subscriptions)
-	if err != nil {
-		return err
-	}
-
-	// Replace "subscribe" with "unsubscribe" in the message
-	// This is a simple approach that works for the current protocol format
-	messageStr := string(message)
-	if strings.Contains(messageStr, `"action":"subscribe"`) {
-		messageStr = strings.Replace(messageStr, `"action":"subscribe"`, `"action":"unsubscribe"`, 1)
-	} else if strings.Contains(messageStr, `"type":"MARKET"`) {
-		// CLOB protocol uses different format
-		messageStr = strings.Replace(messageStr, `"type":"MARKET"`, `"type":"UNSUBSCRIBE"`, 1)
-	}
-	message = []byte(messageStr)
-
-	c.logger.Debug("Sending unsubscription message: %s", string(message))
-
-	// Send unsubscription through write channel
-	select {
-	case c.writeChan <- writeRequest{messageType: websocket.TextMessage, data: message}:
-		c.logger.Info("Unsubscribed from %d channels", len(subscriptions))
-		return nil
-	case <-time.After(5 * time.Second):
-		return errors.New("timeout sending unsubscription message")
-	}
+	c.logger.Info("Unsubscribed from %d channels (%d remaining)", len(subscriptions), len(newSubs))
+	return nil
 }
 
 // ping sends periodic ping messages to keep the connection alive

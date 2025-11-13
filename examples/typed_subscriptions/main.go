@@ -135,16 +135,22 @@ func main() {
 	}
 
 	// Example 4: Subscribe to crypto prices
+	// IMPORTANT: crypto_prices topic only supports ONE symbol per connection
 	// Subscribe to Bitcoin price updates
+	// NOTE: If you need to monitor multiple crypto symbols, create separate client connections
 	if err := typedSub.SubscribeToCryptoPrices(nil, polymarketrealtime.NewBTCPriceFilter()); err != nil {
 		log.Printf("Failed to subscribe to crypto prices: %v", err)
 	}
 
-	// Example 5: Subscribe to equity prices
-	// Subscribe to Apple stock price updates
+	// Example 5: Subscribe to equity prices - COMMENTED OUT
+	// IMPORTANT: equity_prices topic also only supports ONE symbol per connection
+	// Since we already subscribed to BTC above, subscribing to AAPL would replace it
+	// To monitor both, you need separate client connections (see examples/multi_symbol_tracking)
+	/*
 	if err := typedSub.SubscribeToEquityPrices(nil, polymarketrealtime.NewAppleStockFilter()); err != nil {
 		log.Printf("Failed to subscribe to equity prices: %v", err)
 	}
+	*/
 
 	// Example 6: Subscribe to CLOB user data (requires authentication)
 	apiKey := os.Getenv("API_KEY")

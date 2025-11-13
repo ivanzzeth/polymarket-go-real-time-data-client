@@ -23,11 +23,20 @@ func NewRealtimeTypedSubscriptionHandler(client Client) *RealtimeTypedSubscripti
 type ActivityTradesCallback func(trade Trade) error
 
 // SubscribeToActivityTrades subscribes to activity trades with a typed callback
-// filter: Optional ActivityFilter to filter by market or asset ID
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple markets/assets and receive data for all of them.
+//
+// Filter format: {"event_slug":"string"} OR {"market_slug":"string"}
+// filter: Optional ActivityFilter to filter by market or event slug
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityTrades(callback ActivityTradesCallback, filter *ActivityFilter) error {
 	filterStr := ""
 	if filter != nil {
-		filterStr = filter.ToJSON()
+		var err error
+		filterStr, err = filter.ToJSON()
+		if err != nil {
+			return fmt.Errorf("failed to convert filter to JSON: %w", err)
+		}
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -43,11 +52,20 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityTrades(callback Ac
 type ActivityOrdersMatchedCallback func(trade Trade) error
 
 // SubscribeToActivityOrdersMatched subscribes to activity orders matched with a typed callback
-// filter: Optional ActivityFilter to filter by market or asset ID
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple markets/assets and receive data for all of them.
+//
+// Filter format: {"event_slug":"string"} OR {"market_slug":"string"}
+// filter: Optional ActivityFilter to filter by market or event slug
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityOrdersMatched(callback ActivityOrdersMatchedCallback, filter *ActivityFilter) error {
 	filterStr := ""
 	if filter != nil {
-		filterStr = filter.ToJSON()
+		var err error
+		filterStr, err = filter.ToJSON()
+		if err != nil {
+			return fmt.Errorf("failed to convert filter to JSON: %w", err)
+		}
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -65,11 +83,20 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToActivityOrdersMatched(call
 type CommentCreatedCallback func(comment Comment) error
 
 // SubscribeToCommentCreated subscribes to comment created events with a typed callback
-// filter: Optional CommentFilter to filter by event ID or series ID
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple events/series and receive data for all of them.
+//
+// Filter format: {"event_slug":"string"} OR {"series_slug":"string"}
+// filter: Optional CommentFilter to filter by event or series slug
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentCreated(callback CommentCreatedCallback, filter *CommentFilter) error {
 	filterStr := ""
 	if filter != nil {
-		filterStr = filter.ToJSON()
+		var err error
+		filterStr, err = filter.ToJSON()
+		if err != nil {
+			return fmt.Errorf("failed to convert filter to JSON: %w", err)
+		}
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -85,11 +112,20 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentCreated(callback Co
 type CommentRemovedCallback func(comment Comment) error
 
 // SubscribeToCommentRemoved subscribes to comment removed events with a typed callback
-// filter: Optional CommentFilter to filter by event ID or series ID
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple events/series and receive data for all of them.
+//
+// Filter format: {"event_slug":"string"} OR {"series_slug":"string"}
+// filter: Optional CommentFilter to filter by event or series slug
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentRemoved(callback CommentRemovedCallback, filter *CommentFilter) error {
 	filterStr := ""
 	if filter != nil {
-		filterStr = filter.ToJSON()
+		var err error
+		filterStr, err = filter.ToJSON()
+		if err != nil {
+			return fmt.Errorf("failed to convert filter to JSON: %w", err)
+		}
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -105,11 +141,20 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCommentRemoved(callback Co
 type ReactionCreatedCallback func(reaction Reaction) error
 
 // SubscribeToReactionCreated subscribes to reaction created events with a typed callback
-// filter: Optional CommentFilter to filter by event ID or series ID
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple events/series and receive data for all of them.
+//
+// Filter format: {"event_slug":"string"} OR {"series_slug":"string"}
+// filter: Optional CommentFilter to filter by event or series slug
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionCreated(callback ReactionCreatedCallback, filter *CommentFilter) error {
 	filterStr := ""
 	if filter != nil {
-		filterStr = filter.ToJSON()
+		var err error
+		filterStr, err = filter.ToJSON()
+		if err != nil {
+			return fmt.Errorf("failed to convert filter to JSON: %w", err)
+		}
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -125,11 +170,20 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionCreated(callback R
 type ReactionRemovedCallback func(reaction Reaction) error
 
 // SubscribeToReactionRemoved subscribes to reaction removed events with a typed callback
-// filter: Optional CommentFilter to filter by event ID or series ID
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple events/series and receive data for all of them.
+//
+// Filter format: {"event_slug":"string"} OR {"series_slug":"string"}
+// filter: Optional CommentFilter to filter by event or series slug
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionRemoved(callback ReactionRemovedCallback, filter *CommentFilter) error {
 	filterStr := ""
 	if filter != nil {
-		filterStr = filter.ToJSON()
+		var err error
+		filterStr, err = filter.ToJSON()
+		if err != nil {
+			return fmt.Errorf("failed to convert filter to JSON: %w", err)
+		}
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -147,6 +201,11 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToReactionRemoved(callback R
 type RFQRequestCallback func(request RFQRequest) error
 
 // SubscribeToRFQRequestCreated subscribes to RFQ request created events
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple RFQ events and receive data for all of them.
+//
+// Filter format: No filters required for RFQ topic
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQRequestCreated(callback RFQRequestCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -157,6 +216,8 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQRequestCreated(callback
 }
 
 // SubscribeToRFQRequestEdited subscribes to RFQ request edited events
+//
+// This topic SUPPORTS multiple subscriptions. See SubscribeToRFQRequestCreated for details.
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQRequestEdited(callback RFQRequestCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -167,6 +228,8 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQRequestEdited(callback 
 }
 
 // SubscribeToRFQRequestCanceled subscribes to RFQ request canceled events
+//
+// This topic SUPPORTS multiple subscriptions. See SubscribeToRFQRequestCreated for details.
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQRequestCanceled(callback RFQRequestCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -177,6 +240,8 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQRequestCanceled(callbac
 }
 
 // SubscribeToRFQRequestExpired subscribes to RFQ request expired events
+//
+// This topic SUPPORTS multiple subscriptions. See SubscribeToRFQRequestCreated for details.
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQRequestExpired(callback RFQRequestCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -190,6 +255,8 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQRequestExpired(callback
 type RFQQuoteCallback func(quote RFQQuote) error
 
 // SubscribeToRFQQuoteCreated subscribes to RFQ quote created events
+//
+// This topic SUPPORTS multiple subscriptions. See SubscribeToRFQRequestCreated for details.
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteCreated(callback RFQQuoteCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -200,6 +267,8 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteCreated(callback R
 }
 
 // SubscribeToRFQQuoteEdited subscribes to RFQ quote edited events
+//
+// This topic SUPPORTS multiple subscriptions. See SubscribeToRFQRequestCreated for details.
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteEdited(callback RFQQuoteCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -210,6 +279,8 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteEdited(callback RF
 }
 
 // SubscribeToRFQQuoteCanceled subscribes to RFQ quote canceled events
+//
+// This topic SUPPORTS multiple subscriptions. See SubscribeToRFQRequestCreated for details.
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteCanceled(callback RFQQuoteCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -220,6 +291,8 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteCanceled(callback 
 }
 
 // SubscribeToRFQQuoteExpired subscribes to RFQ quote expired events
+//
+// This topic SUPPORTS multiple subscriptions. See SubscribeToRFQRequestCreated for details.
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteExpired(callback RFQQuoteCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -235,11 +308,37 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToRFQQuoteExpired(callback R
 type CryptoPriceCallback func(price CryptoPrice) error
 
 // SubscribeToCryptoPrices subscribes to crypto price updates
+//
+// IMPORTANT: The Polymarket WebSocket API for crypto_prices topic only supports
+// ONE symbol per connection. Subscribing to a new symbol will REPLACE the previous
+// subscription, not add to it. If you need to monitor multiple symbols simultaneously,
+// you must create separate client connections for each symbol.
+//
+// Example of correct usage for multiple symbols:
+//
+//	// Create separate clients for each symbol
+//	solClient := polymarketrealtime.New(...)
+//	ethClient := polymarketrealtime.New(...)
+//
+//	solClient.Connect()
+//	ethClient.Connect()
+//
+//	// Each client subscribes to one symbol
+//	solSub := polymarketrealtime.NewRealtimeTypedSubscriptionHandler(solClient)
+//	ethSub := polymarketrealtime.NewRealtimeTypedSubscriptionHandler(ethClient)
+//
+//	solSub.SubscribeToCryptoPrices(nil, polymarketrealtime.NewSOLPriceFilter())
+//	ethSub.SubscribeToCryptoPrices(nil, polymarketrealtime.NewETHPriceFilter())
+//
 // filter: CryptoPriceFilter with symbol (e.g., "btcusdt")
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPrices(callback CryptoPriceCallback, filter *CryptoPriceFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+	if filter == nil {
+		return fmt.Errorf("filter is required for crypto price subscription")
+	}
+
+	filterStr, err := filter.ToJSON()
+	if err != nil {
+		return fmt.Errorf("failed to convert filter to JSON: %w", err)
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -252,11 +351,19 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPrices(callback Cryp
 }
 
 // SubscribeToCryptoPricesChainlink subscribes to crypto price updates from Chainlink
+//
+// IMPORTANT: Same limitation as SubscribeToCryptoPrices - only ONE symbol per connection.
+// See SubscribeToCryptoPrices documentation for details on handling multiple symbols.
+//
 // filter: CryptoPriceFilter with symbol (e.g., "btcusdt")
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPricesChainlink(callback CryptoPriceCallback, filter *CryptoPriceFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+	if filter == nil {
+		return fmt.Errorf("filter is required for crypto price chainlink subscription")
+	}
+
+	filterStr, err := filter.ToJSON()
+	if err != nil {
+		return fmt.Errorf("failed to convert filter to JSON: %w", err)
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -274,11 +381,19 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCryptoPricesChainlink(call
 type EquityPriceCallback func(price EquityPrice) error
 
 // SubscribeToEquityPrices subscribes to equity price updates
+//
+// IMPORTANT: Same limitation as SubscribeToCryptoPrices - only ONE symbol per connection.
+// See SubscribeToCryptoPrices documentation for details on handling multiple symbols.
+//
 // filter: EquityPriceFilter with symbol (e.g., "AAPL")
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToEquityPrices(callback EquityPriceCallback, filter *EquityPriceFilter) error {
-	filterStr := ""
-	if filter != nil {
-		filterStr = filter.ToJSON()
+	if filter == nil {
+		return fmt.Errorf("filter is required for equity price subscription")
+	}
+
+	filterStr, err := filter.ToJSON()
+	if err != nil {
+		return fmt.Errorf("failed to convert filter to JSON: %w", err)
 	}
 
 	return h.client.Subscribe([]Subscription{
@@ -337,17 +452,27 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBUserAll(auth ClobAuth)
 type PriceChangesCallback func(changes PriceChanges) error
 
 // SubscribeToCLOBMarketPriceChanges subscribes to CLOB market price changes
-// filter: CLOBMarketFilter with token IDs
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple token IDs and receive data for all of them.
+//
+// Filter format: ["100","200",...] (array of token IDs as strings)
+// filter: CLOBMarketFilter with token IDs (REQUIRED)
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketPriceChanges(filter *CLOBMarketFilter, callback PriceChangesCallback) error {
-	if filter == nil || len(filter.TokenIDs) == 0 {
-		return fmt.Errorf("filter with token IDs is required for price_change subscription")
+	if filter == nil {
+		return fmt.Errorf("filter is required for price_change subscription")
+	}
+
+	filterStr, err := filter.ToJSON()
+	if err != nil {
+		return fmt.Errorf("failed to convert filter to JSON: %w", err)
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicClobMarket,
 			Type:    MessageTypePriceChange,
-			Filters: filter.ToJSON(),
+			Filters: filterStr,
 		},
 	})
 }
@@ -356,17 +481,27 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketPriceChanges(fil
 type AggOrderbookCallback func(orderbook AggOrderbook) error
 
 // SubscribeToCLOBMarketAggOrderbook subscribes to CLOB market aggregated orderbook
-// filter: CLOBMarketFilter with token IDs
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple token IDs and receive data for all of them.
+//
+// Filter format: ["100","200",...] (array of token IDs as strings)
+// filter: CLOBMarketFilter with token IDs (REQUIRED)
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketAggOrderbook(filter *CLOBMarketFilter, callback AggOrderbookCallback) error {
-	if filter == nil || len(filter.TokenIDs) == 0 {
-		return fmt.Errorf("filter with token IDs is required for agg_orderbook subscription")
+	if filter == nil {
+		return fmt.Errorf("filter is required for agg_orderbook subscription")
+	}
+
+	filterStr, err := filter.ToJSON()
+	if err != nil {
+		return fmt.Errorf("failed to convert filter to JSON: %w", err)
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicClobMarket,
 			Type:    MessageTypeAggOrderbook,
-			Filters: filter.ToJSON(),
+			Filters: filterStr,
 		},
 	})
 }
@@ -375,17 +510,27 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketAggOrderbook(fil
 type LastTradePriceCallback func(price LastTradePrice) error
 
 // SubscribeToCLOBMarketLastTradePrice subscribes to CLOB market last trade price
-// filter: CLOBMarketFilter with token IDs
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple token IDs and receive data for all of them.
+//
+// Filter format: ["100","200",...] (array of token IDs as strings)
+// filter: CLOBMarketFilter with token IDs (REQUIRED)
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketLastTradePrice(filter *CLOBMarketFilter, callback LastTradePriceCallback) error {
-	if filter == nil || len(filter.TokenIDs) == 0 {
-		return fmt.Errorf("filter with token IDs is required for last_trade_price subscription")
+	if filter == nil {
+		return fmt.Errorf("filter is required for last_trade_price subscription")
+	}
+
+	filterStr, err := filter.ToJSON()
+	if err != nil {
+		return fmt.Errorf("failed to convert filter to JSON: %w", err)
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicClobMarket,
 			Type:    MessageTypeLastTradePrice,
-			Filters: filter.ToJSON(),
+			Filters: filterStr,
 		},
 	})
 }
@@ -394,17 +539,27 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketLastTradePrice(f
 type TickSizeChangeCallback func(change TickSizeChange) error
 
 // SubscribeToCLOBMarketTickSizeChange subscribes to CLOB market tick size changes
-// filter: CLOBMarketFilter with token IDs
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+// You can subscribe to multiple token IDs and receive data for all of them.
+//
+// Filter format: ["100","200",...] (array of token IDs as strings)
+// filter: CLOBMarketFilter with token IDs (REQUIRED)
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketTickSizeChange(filter *CLOBMarketFilter, callback TickSizeChangeCallback) error {
-	if filter == nil || len(filter.TokenIDs) == 0 {
-		return fmt.Errorf("filter with token IDs is required for tick_size_change subscription")
+	if filter == nil {
+		return fmt.Errorf("filter is required for tick_size_change subscription")
+	}
+
+	filterStr, err := filter.ToJSON()
+	if err != nil {
+		return fmt.Errorf("failed to convert filter to JSON: %w", err)
 	}
 
 	return h.client.Subscribe([]Subscription{
 		{
 			Topic:   TopicClobMarket,
 			Type:    MessageTypeTickSizeChange,
-			Filters: filter.ToJSON(),
+			Filters: filterStr,
 		},
 	})
 }
@@ -413,6 +568,10 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketTickSizeChange(f
 type ClobMarketCallback func(market ClobMarket) error
 
 // SubscribeToCLOBMarketCreated subscribes to CLOB market created events
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+//
+// Filter format: No filters required for market_created
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketCreated(callback ClobMarketCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{
@@ -423,6 +582,10 @@ func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketCreated(callback
 }
 
 // SubscribeToCLOBMarketResolved subscribes to CLOB market resolved events
+//
+// This topic SUPPORTS multiple subscriptions in a single connection.
+//
+// Filter format: No filters required for market_resolved
 func (h *RealtimeTypedSubscriptionHandler) SubscribeToCLOBMarketResolved(callback ClobMarketCallback) error {
 	return h.client.Subscribe([]Subscription{
 		{

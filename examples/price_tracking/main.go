@@ -10,21 +10,24 @@ import (
 )
 
 func main() {
+	log.Println("=== Price Tracking Demo ===")
+	log.Println()
+	log.Println("IMPORTANT: Due to Polymarket API limitations, crypto_prices and equity_prices")
+	log.Println("topics only support ONE symbol per WebSocket connection.")
+	log.Println()
+	log.Println("This example demonstrates the CORRECT way to monitor a SINGLE symbol.")
+	log.Println("To monitor multiple symbols, you need separate client connections for each.")
+	log.Println()
+
+	// Symbol to monitor (change this to monitor different symbols)
+	symbolToMonitor := "solusdt" // Options: btcusdt, ethusdt, solusdt, etc.
+
 	// Create a typed message router
 	router := polymarketdataclient.NewRealtimeMessageRouter()
 
 	// Track crypto prices
 	router.RegisterCryptoPriceHandler(func(price polymarketdataclient.CryptoPrice) error {
 		log.Printf("[Crypto] %s = $%s (time: %s)",
-			price.Symbol,
-			price.Value.String(),
-			price.Time.Format("15:04:05.000"))
-		return nil
-	})
-
-	// Track equity prices
-	router.RegisterEquityPriceHandler(func(price polymarketdataclient.EquityPrice) error {
-		log.Printf("[Equity] %s = $%s (time: %s)",
 			price.Symbol,
 			price.Value.String(),
 			price.Time.Format("15:04:05.000"))
@@ -46,7 +49,7 @@ func main() {
 	)
 
 	// Connect to the server
-	log.Println("Connecting to Polymarket...")
+	log.Printf("Connecting to Polymarket to monitor %s...\n", symbolToMonitor)
 	if err := client.Connect(); err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
@@ -55,40 +58,18 @@ func main() {
 	// Create typed subscription handler
 	typedSub := polymarketdataclient.NewRealtimeTypedSubscriptionHandler(client)
 
-	log.Println("Subscribing to price feeds...")
+	// Subscribe to a single crypto price
+	filter := polymarketdataclient.NewCryptoPriceFilter(symbolToMonitor)
+	if err := typedSub.SubscribeToCryptoPrices(nil, filter); err != nil {
+		log.Fatalf("Failed to subscribe to %s: %v", symbolToMonitor, err)
+	}
+	log.Printf("✓ Subscribed to %s\n", symbolToMonitor)
 
-	// Subscribe to crypto prices using predefined constants
-	cryptoFilters := []*polymarketdataclient.CryptoPriceFilter{
-		polymarketdataclient.NewBTCPriceFilter(),
-		polymarketdataclient.NewETHPriceFilter(),
-		polymarketdataclient.NewSOLPriceFilter(),
-	}
-	for _, filter := range cryptoFilters {
-		if err := typedSub.SubscribeToCryptoPrices(nil, filter); err != nil {
-			log.Printf("Failed to subscribe to %s: %v", filter.Symbol, err)
-		} else {
-			log.Printf("✓ Subscribed to %s", filter.Symbol)
-		}
-	}
-
-	// Subscribe to equity prices using predefined constants
-	equityFilters := []*polymarketdataclient.EquityPriceFilter{
-		polymarketdataclient.NewAppleStockFilter(),
-		polymarketdataclient.NewTeslaStockFilter(),
-		polymarketdataclient.NewNvidiaStockFilter(),
-		polymarketdataclient.NewEquityPriceFilter(polymarketdataclient.EquitySymbolMSFT),
-	}
-	for _, filter := range equityFilters {
-		if err := typedSub.SubscribeToEquityPrices(nil, filter); err != nil {
-			log.Printf("Failed to subscribe to %s: %v", filter.Symbol, err)
-		} else {
-			log.Printf("✓ Subscribed to %s", filter.Symbol)
-		}
-	}
-
+	log.Println()
 	log.Println("=== Price Tracking Started ===")
-	log.Println("Monitoring crypto and equity prices...")
+	log.Printf("Monitoring %s price updates...\n", symbolToMonitor)
 	log.Println("Press Ctrl+C to exit")
+	log.Println()
 
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)
