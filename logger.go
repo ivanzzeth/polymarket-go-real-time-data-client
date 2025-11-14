@@ -27,25 +27,25 @@ func NewLogger(level LogLevel) Logger {
 }
 
 func (l logger) Debug(format string, args ...any) {
-	if l.level <= LogLevelDebug {
+	if l.level >= LogLevelDebug {
 		fmt.Printf("[PolymarketRealTimeDataClient][DEBUG] "+format+"\n", args...)
 	}
 }
 
 func (l logger) Info(format string, args ...any) {
-	if l.level <= LogLevelInfo {
+	if l.level >= LogLevelInfo {
 		fmt.Printf("[PolymarketRealTimeDataClient][INFO] "+format+"\n", args...)
 	}
 }
 
 func (l logger) Warn(format string, args ...any) {
-	if l.level <= LogLevelWarn {
+	if l.level >= LogLevelWarn {
 		fmt.Printf("[PolymarketRealTimeDataClient][WARN] "+format+"\n", args...)
 	}
 }
 
 func (l logger) Error(format string, args ...any) {
-	if l.level <= LogLevelWarn {
+	if l.level >= LogLevelWarn {
 		fmt.Printf("[PolymarketRealTimeDataClient][ERROR] "+format+"\n", args...)
 	}
 }

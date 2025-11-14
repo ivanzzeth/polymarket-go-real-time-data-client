@@ -18,7 +18,7 @@ func main() {
 
 	// Create client
 	client := polymarketrealtime.New(
-		polymarketrealtime.WithLogger(polymarketrealtime.NewLogger(polymarketrealtime.LogLevelDebug)),
+		polymarketrealtime.WithLogger(polymarketrealtime.NewLogger(polymarketrealtime.LogLevelInfo)),
 		polymarketrealtime.WithAutoReconnect(true),
 		polymarketrealtime.WithOnConnect(func() {
 			log.Println("✅ Connected to Polymarket WebSocket")
