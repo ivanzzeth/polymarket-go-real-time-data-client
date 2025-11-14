@@ -153,7 +153,7 @@ func (c *baseClient) connect() error {
 	c.internal.mu.Unlock()
 
 	// Start goroutines
-	go c.ping()
+	go c.pingLoop()
 	go c.readMessages()
 	go c.writeLoop()
 
@@ -351,8 +351,8 @@ func (c *baseClient) unsubscribe(subscriptions []Subscription) error {
 	return nil
 }
 
-// ping sends periodic ping messages to keep the connection alive
-func (c *baseClient) ping() {
+// pingLoop sends periodic pingLoop messages to keep the connection alive
+func (c *baseClient) pingLoop() {
 	ticker := time.NewTicker(c.pingInterval)
 	defer ticker.Stop()
 
@@ -377,10 +377,23 @@ func (c *baseClient) ping() {
 			if isClosed {
 				return
 			}
-			c.writeChan <- writeRequest{websocket.TextMessage, []byte("ping")}
-			// c.logger.Debug("Ping sent")
+			c.ping()
 		}
 	}
+}
+
+func (c *baseClient) ping() {
+	// Try all of these to check if the connection will not be closed abnormal.
+	c.writeChan <- writeRequest{websocket.TextMessage, []byte("ping")}
+	c.writeChan <- writeRequest{websocket.PingMessage, []byte("ping")}
+	c.writeChan <- writeRequest{websocket.PingMessage, nil}
+
+	// c.writeChan <- writeRequest{websocket.PongMessage, []byte("pong")}
+
+	// Unsupported data for server side
+	// c.writeChan <- writeRequest{websocket.BinaryMessage, []byte("pong")}
+
+	// c.logger.Debug("Ping sent")
 }
 
 // writeLoop serializes all WebSocket writes through a channel
@@ -458,7 +471,7 @@ func (c *baseClient) readMessages() {
 			return
 		}
 
-		c.logger.Debug("Received raw message (len=%d): %s", len(message), string(message))
+		c.logger.Debug("Received raw message (len=%d,type=%v): %s", len(message), messageType, string(message))
 
 		// Handle different message types
 		switch messageType {
@@ -496,6 +509,9 @@ func (c *baseClient) readMessages() {
 			if c.onNewMessage != nil {
 				c.onNewMessage(message)
 			}
+
+		case websocket.PingMessage:
+			c.logger.Debug("Received ping")
 
 		case websocket.PongMessage:
 			c.logger.Debug("Received pong")
@@ -569,7 +585,9 @@ func (c *baseClient) isRecoverableError(err error) bool {
 		}
 	}
 
-	return false
+	c.logger.Warn("Recover connection when encountering unkown error %v", err)
+
+	return true
 }
 
 // TODO: Fix reconnect

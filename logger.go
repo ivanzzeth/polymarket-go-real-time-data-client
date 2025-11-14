@@ -16,19 +16,19 @@ func NewLogger() Logger {
 }
 
 func (logger) Debug(format string, args ...any) {
-	fmt.Printf("[PolymarketDataClient][DEBUG] "+format+"\n", args...)
+	fmt.Printf("[PolymarketRealTimeDataClient][DEBUG] "+format+"\n", args...)
 }
 
 func (logger) Info(format string, args ...any) {
-	fmt.Printf("[PolymarketDataClient][INFO] "+format+"\n", args...)
+	fmt.Printf("[PolymarketRealTimeDataClient][INFO] "+format+"\n", args...)
 }
 
 func (logger) Warn(format string, args ...any) {
-	fmt.Printf("[PolymarketDataClient][WARN] "+format+"\n", args...)
+	fmt.Printf("[PolymarketRealTimeDataClient][WARN] "+format+"\n", args...)
 }
 
 func (logger) Error(format string, args ...any) {
-	fmt.Printf("[PolymarketDataClient][ERROR] "+format+"\n", args...)
+	fmt.Printf("[PolymarketRealTimeDataClient][ERROR] "+format+"\n", args...)
 }
 
 type silentLogger struct {
