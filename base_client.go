@@ -434,6 +434,7 @@ func (c *baseClient) readMessages() {
 		c.connMu.RUnlock()
 
 		if conn == nil {
+			c.logger.Warn("readMessage exits due to nil ws connection")
 			return
 		}
 
@@ -442,6 +443,7 @@ func (c *baseClient) readMessages() {
 		c.internal.mu.RUnlock()
 
 		if isClosed {
+			c.logger.Warn("readMessage exits due to ws connection closed")
 			return
 		}
 
@@ -480,7 +482,7 @@ func (c *baseClient) readMessages() {
 			// 	continue
 			// }
 
-			c.logger.Debug("Received valid message (len=%d): %s", len(message), msgStr)
+			// c.logger.Debug("Received valid message (len=%d): %s", len(message), msgStr)
 
 			// Call message callback
 			if c.onNewMessage != nil {
@@ -573,7 +575,7 @@ func (c *baseClient) isRecoverableError(err error) bool {
 // TODO: Fix reconnect
 // reconnect attempts to reconnect to the WebSocket server with exponential backoff
 func (c *baseClient) reconnect() {
-	c.logger.Debug("Trying to reconnect...")
+	c.logger.Info("Trying to reconnect...")
 	c.internal.mu.Lock()
 
 	// Check if already reconnecting
@@ -669,7 +671,7 @@ func (c *baseClient) restoreSubscriptions() {
 	c.internal.mu.RUnlock()
 
 	if len(subscriptions) == 0 {
-		c.logger.Debug("No subscriptions to restore")
+		c.logger.Warn("No subscriptions to restore")
 		return
 	}
 
