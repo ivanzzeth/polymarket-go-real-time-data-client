@@ -9,6 +9,8 @@ const (
 	defaultMaxReconnectAttempts = 10 // 0 means infinite retries
 	defaultReconnectBackoffInit = 1 * time.Second
 	defaultReconnectBackoffMax  = 30 * time.Second
+	defaultWriteTimeout         = 5 * time.Second
+	defaultReadTimeout          = 30 * time.Second
 )
 
 // Config contains all configuration options for the WebSocket client
@@ -20,6 +22,8 @@ type Config struct {
 	MaxReconnectAttempts int
 	ReconnectBackoffInit time.Duration
 	ReconnectBackoffMax  time.Duration
+	ReadTimeout          time.Duration
+	WriteTimeout         time.Duration
 
 	OnConnectCallback    func()
 	OnNewMessage         func([]byte)
@@ -83,6 +87,18 @@ func WithReconnectBackoff(initial, max time.Duration) ClientOptions {
 	return func(c *Config) {
 		c.ReconnectBackoffInit = initial
 		c.ReconnectBackoffMax = max
+	}
+}
+
+func WithReadTimeout(timeout time.Duration) ClientOptions {
+	return func(c *Config) {
+		c.ReadTimeout = timeout
+	}
+}
+
+func WithWriteTimeout(timeout time.Duration) ClientOptions {
+	return func(c *Config) {
+		c.WriteTimeout = timeout
 	}
 }
 

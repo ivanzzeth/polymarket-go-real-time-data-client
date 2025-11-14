@@ -35,6 +35,8 @@ type baseClient struct {
 	maxReconnectAttempts int
 	reconnectBackoffInit time.Duration
 	reconnectBackoffMax  time.Duration
+	readTimeout          time.Duration
+	writeTimeout         time.Duration
 
 	// Callbacks
 	onConnectCallback    func()
@@ -73,6 +75,8 @@ func newBaseClient(protocol Protocol, opts ...ClientOptions) *baseClient {
 		MaxReconnectAttempts: defaultMaxReconnectAttempts,
 		ReconnectBackoffInit: defaultReconnectBackoffInit,
 		ReconnectBackoffMax:  defaultReconnectBackoffMax,
+		ReadTimeout:          defaultReadTimeout,
+		WriteTimeout:         defaultWriteTimeout,
 	}
 
 	// Apply user options to config
@@ -92,6 +96,9 @@ func newBaseClient(protocol Protocol, opts ...ClientOptions) *baseClient {
 		maxReconnectAttempts: config.MaxReconnectAttempts,
 		reconnectBackoffInit: config.ReconnectBackoffInit,
 		reconnectBackoffMax:  config.ReconnectBackoffMax,
+		readTimeout:          config.ReadTimeout,
+		writeTimeout:         config.WriteTimeout,
+
 		onConnectCallback:    config.OnConnectCallback,
 		onNewMessage:         config.OnNewMessage,
 		onDisconnectCallback: config.OnDisconnectCallback,
@@ -426,6 +433,7 @@ func (c *baseClient) writeLoop() {
 
 				c.logger.Debug("Write message %v: %v", req.messageType, string(req.data))
 
+				conn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
 				err := conn.WriteMessage(req.messageType, req.data)
 				if err != nil {
 					c.logger.Error("Error writing message (type=%d): %v", req.messageType, err)
@@ -461,9 +469,16 @@ func (c *baseClient) readMessages() {
 		}
 
 		// Read message
+
+		conn.SetReadDeadline(time.Now().Add(c.readTimeout))
 		messageType, message, err := conn.ReadMessage()
 		if err != nil {
-			c.logger.Error("Error reading message: %v", err)
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
+				c.logger.Warn("reading message timed out")
+			} else {
+				c.logger.Error("Error reading message: %v", err)
+			}
 
 			// Check if error is recoverable
 			c.tryAutoReconnect(err)
